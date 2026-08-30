@@ -5,6 +5,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public bool FacingLeft { get { return facingLeft; } set { facingLeft = value; } }
+    public static PlayerController Instance;
 
     [SerializeField] private float moveSpeed = 1f;
 
@@ -16,55 +17,46 @@ public class PlayerController : MonoBehaviour
 
     private bool facingLeft = false;
 
-    private void Awake()
-    {
+    private void Awake() {
+        Instance = this;
         playerControls = new PlayerControls();
         rb = GetComponent<Rigidbody2D>();
         myAnimator = GetComponent<Animator>();
         mySpriteRender = GetComponent<SpriteRenderer>();
     }
 
-    private void OnEnable()
-    {
+    private void OnEnable() {
         playerControls.Enable();
     }
 
-    private void Update()
-    {
+    private void Update() {
         PlayerInput();
     }
 
-    private void FixedUpdate()
-    {
+    private void FixedUpdate() {
         AdjustPlayerFacingDirection();
         Move();
     }
 
-    private void PlayerInput()
-    {
+    private void PlayerInput() {
         movement = playerControls.Movement.Move.ReadValue<Vector2>();
 
         myAnimator.SetFloat("moveX", movement.x);
         myAnimator.SetFloat("moveY", movement.y);
     }
 
-    private void Move()
-    {
+    private void Move() {
         rb.MovePosition(rb.position + movement * (moveSpeed * Time.fixedDeltaTime));
     }
 
-    private void AdjustPlayerFacingDirection()
-    {
+    private void AdjustPlayerFacingDirection() {
         Vector3 mousePos = Input.mousePosition;
         Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(transform.position);
 
-        if (mousePos.x < playerScreenPoint.x)
-        {
+        if (mousePos.x < playerScreenPoint.x) {
             mySpriteRender.flipX = true;
             FacingLeft = true;
-        }
-        else
-        {
+        } else {
             mySpriteRender.flipX = false;
             FacingLeft = false;
         }
