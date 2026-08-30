@@ -10,19 +10,16 @@ public class Flash : MonoBehaviour
     private Material defaultMat;
     private SpriteRenderer spriteRenderer;
 
-    private void Awake()
-    {
+    private void Awake() {
         spriteRenderer = GetComponent<SpriteRenderer>();
         defaultMat = spriteRenderer.material;
     }
 
-    public float GetRestoreMatTime()
-    {
+    public float GetRestoreMatTime() {
         return restoreDefaultMatTime;
     }
 
-    public IEnumerator FlashRoutine()
-    {
+    public IEnumerator FlashRoutine() {
         spriteRenderer.material = whiteFlashMat;
         yield return new WaitForSeconds(restoreDefaultMatTime);
         spriteRenderer.material = defaultMat;
