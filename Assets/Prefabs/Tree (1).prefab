@@ -31,7 +31,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3417838027445365261
 SpriteRenderer:
@@ -74,7 +74,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: d3fbca912e19e7d4d8a9d339a92ec09f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7f65cc4f25206234c8a5251ce98831be, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -117,6 +117,6 @@ CapsuleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.03718, y: 0.020789}
-  m_Size: {x: 1.173015, y: 1.134908}
+  m_Offset: {x: -0.00118, y: -0.09621}
+  m_Size: {x: 0.849016, y: 0.396909}
   m_Direction: 1
