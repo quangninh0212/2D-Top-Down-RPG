@@ -15,20 +15,17 @@ public class Sword : MonoBehaviour, IWeapon
 
     private GameObject slashAnim;
 
-    private void Awake()
-    {
+    private void Awake() {
         playerController = GetComponentInParent<PlayerController>();
         activeWeapon = GetComponentInParent<ActiveWeapon>();
         myAnimator = GetComponent<Animator>();
     }
 
-    private void Update()
-    {
+    private void Update() {
         MouseFollowWithOffset();
     }
 
-    public void Attack()
-    {
+    public void Attack() {
         // isAttacking = true;
         myAnimator.SetTrigger("Attack");
         weaponCollider.gameObject.SetActive(true);
@@ -37,30 +34,25 @@ public class Sword : MonoBehaviour, IWeapon
         StartCoroutine(AttackCDRoutine());
     }
 
-    private IEnumerator AttackCDRoutine()
-    {
+    private IEnumerator AttackCDRoutine() {
         yield return new WaitForSeconds(swordAttackCD);
         ActiveWeapon.Instance.ToggleIsAttacking(false);
     }
 
-    public void DoneAttackingAnimEvent()
-    {
+    public void DoneAttackingAnimEvent() {
         weaponCollider.gameObject.SetActive(false);
     }
 
 
-    public void SwingUpFlipAnimEvent()
-    {
+    public void SwingUpFlipAnimEvent() {
         slashAnim.gameObject.transform.rotation = Quaternion.Euler(-180, 0, 0);
 
-        if (playerController.FacingLeft)
-        {
+        if (playerController.FacingLeft) { 
             slashAnim.GetComponent<SpriteRenderer>().flipX = true;
         }
     }
 
-    public void SwingDownFlipAnimEvent()
-    {
+    public void SwingDownFlipAnimEvent() {
         slashAnim.gameObject.transform.rotation = Quaternion.Euler(0, 0, 0);
 
         if (playerController.FacingLeft)
@@ -69,20 +61,16 @@ public class Sword : MonoBehaviour, IWeapon
         }
     }
 
-    private void MouseFollowWithOffset()
-    {
+    private void MouseFollowWithOffset() {
         Vector3 mousePos = Input.mousePosition;
         Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(playerController.transform.position);
 
         float angle = Mathf.Atan2(mousePos.y, mousePos.x) * Mathf.Rad2Deg;
 
-        if (mousePos.x < playerScreenPoint.x)
-        {
+        if (mousePos.x < playerScreenPoint.x) {
             activeWeapon.transform.rotation = Quaternion.Euler(0, -180, angle);
             weaponCollider.transform.rotation = Quaternion.Euler(0, -180, 0);
-        }
-        else
-        {
+        } else {
             activeWeapon.transform.rotation = Quaternion.Euler(0, 0, angle);
             weaponCollider.transform.rotation = Quaternion.Euler(0, 0, 0);
         }
