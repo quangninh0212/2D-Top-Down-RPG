@@ -10,8 +10,7 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
 
     private bool attackButtonDown, isAttacking = false;
 
-    protected override void Awake()
-    {
+    protected override void Awake() {
         base.Awake();
 
         playerControls = new PlayerControls();
@@ -28,23 +27,19 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         playerControls.Combat.Attack.canceled += _ => StopAttacking();
     }
 
-    private void Update()
-    {
+    private void Update() {
         Attack();
     }
 
-    public void NewWeapon(MonoBehaviour newWeapon)
-    {
+    public void NewWeapon(MonoBehaviour newWeapon) {
         CurrentActiveWeapon = newWeapon;
     }
 
-    public void WeaponNull()
-    {
+    public void WeaponNull() {
         CurrentActiveWeapon = null;
     }
 
-    public void ToggleIsAttacking(bool value)
-    {
+    public void ToggleIsAttacking(bool value) {
         isAttacking = value;
     }
 
@@ -58,10 +53,8 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         attackButtonDown = false;
     }
 
-    private void Attack()
-    {
-        if (attackButtonDown && !isAttacking)
-        {
+    private void Attack() {
+        if (attackButtonDown && !isAttacking) {
             isAttacking = true;
             (CurrentActiveWeapon as IWeapon).Attack();
         }
