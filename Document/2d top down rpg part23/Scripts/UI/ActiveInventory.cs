@@ -8,28 +8,23 @@ public class ActiveInventory : MonoBehaviour
 
     private PlayerControls playerControls;
 
-    private void Awake()
-    {
+    private void Awake() {
         playerControls = new PlayerControls();
     }
 
-    private void Start()
-    {
+    private void Start() {
         playerControls.Inventory.Keyboard.performed += ctx => ToggleActiveSlot((int)ctx.ReadValue<float>());
     }
 
-    private void OnEnable()
-    {
+    private void OnEnable() {
         playerControls.Enable();
     }
 
-    private void ToggleActiveSlot(int numValue)
-    {
+    private void ToggleActiveSlot(int numValue) {
         ToggleActiveHighlight(numValue - 1);
     }
 
-    private void ToggleActiveHighlight(int indexNum)
-    {
+    private void ToggleActiveHighlight(int indexNum) {
         activeSlotIndexNum = indexNum;
 
         foreach (Transform inventorySlot in this.transform)
@@ -42,8 +37,7 @@ public class ActiveInventory : MonoBehaviour
         ChangeActiveWeapon();
     }
 
-    private void ChangeActiveWeapon()
-    {
+    private void ChangeActiveWeapon() {
         Debug.Log(transform.GetChild(activeSlotIndexNum).GetComponent<InventorySlot>().GetWeaponInfo().weaponPrefab.name);
     }
 }
