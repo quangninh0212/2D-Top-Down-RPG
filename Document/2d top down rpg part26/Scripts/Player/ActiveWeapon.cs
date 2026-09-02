@@ -11,8 +11,7 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
 
     private bool attackButtonDown, isAttacking = false;
 
-    protected override void Awake()
-    {
+    protected override void Awake() {
         base.Awake();
 
         playerControls = new PlayerControls();
@@ -31,33 +30,28 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         AttackCooldown();
     }
 
-    private void Update()
-    {
+    private void Update() {
         Attack();
     }
 
-    public void NewWeapon(MonoBehaviour newWeapon)
-    {
+    public void NewWeapon(MonoBehaviour newWeapon) {
         CurrentActiveWeapon = newWeapon;
 
         AttackCooldown();
         timeBetweenAttacks = (CurrentActiveWeapon as IWeapon).GetWeaponInfo().weaponCooldown;
     }
 
-    public void WeaponNull()
-    {
+    public void WeaponNull() {
         CurrentActiveWeapon = null;
     }
 
-    private void AttackCooldown()
-    {
+    private void AttackCooldown() {
         isAttacking = true;
         StopAllCoroutines();
         StartCoroutine(TimeBetweenAttacksRoutine());
     }
 
-    private IEnumerator TimeBetweenAttacksRoutine()
-    {
+    private IEnumerator TimeBetweenAttacksRoutine() {
         yield return new WaitForSeconds(timeBetweenAttacks);
         isAttacking = false;
     }
@@ -72,10 +66,8 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         attackButtonDown = false;
     }
 
-    private void Attack()
-    {
-        if (attackButtonDown && !isAttacking)
-        {
+    private void Attack() {
+        if (attackButtonDown && !isAttacking) {
             AttackCooldown();
             (CurrentActiveWeapon as IWeapon).Attack();
         }

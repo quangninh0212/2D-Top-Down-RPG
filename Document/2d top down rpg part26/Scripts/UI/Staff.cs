@@ -6,14 +6,12 @@ public class Staff : MonoBehaviour, IWeapon
 {
     [SerializeField] private WeaponInfo weaponInfo;
 
-    private void Update()
-    {
+    private void Update() {
         MouseFollowWithOffset();
     }
 
 
-    public void Attack()
-    {
+    public void Attack() {
         Debug.Log("Staff Attack");
     }
 

@@ -2,17 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Bow : MonoBehaviour, IWeapon
+public class InventorySlot : MonoBehaviour
 {
     [SerializeField] private WeaponInfo weaponInfo;
 
-    public void Attack()
-    {
-        Debug.Log("Bow Attack");
-    }
-
-    public WeaponInfo GetWeaponInfo()
-    {
+    public WeaponInfo GetWeaponInfo() {
         return weaponInfo;
     }
 }
