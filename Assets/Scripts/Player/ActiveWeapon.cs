@@ -58,6 +58,10 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         attackButtonDown = false;
     }
 
+    // Called from the on-screen aim joystick / attack button on touch devices.
+    public void StartAttackingTouch() => StartAttacking();
+    public void StopAttackingTouch() => StopAttacking();
+
     private void Attack()
     {
         if (attackButtonDown && !isAttacking)

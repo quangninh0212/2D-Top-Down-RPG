@@ -30,6 +30,21 @@ public class ActiveInventory : MonoBehaviour
         ToggleActiveHighlight(numValue - 1);
     }
 
+    // Called from InventorySlot when tapped on touch devices.
+    public void SelectSlot(int indexNum)
+    {
+        ToggleActiveHighlight(indexNum);
+    }
+
+    // Used by the on-screen weapon button, for when the inventory bar itself
+    // is awkward to tap on a phone.
+    public void SelectNextSlot()
+    {
+        if (transform.childCount == 0) { return; }
+
+        ToggleActiveHighlight((activeSlotIndexNum + 1) % transform.childCount);
+    }
+
     private void ToggleActiveHighlight(int indexNum)
     {
         activeSlotIndexNum = indexNum;

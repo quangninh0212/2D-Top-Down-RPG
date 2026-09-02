@@ -11,6 +11,12 @@ public class MouseFollow : MonoBehaviour
 
     private void FaceMouse()
     {
+        if (MobileInput.TryGetAimDirection(out Vector2 aimDirection))
+        {
+            transform.right = aimDirection;
+            return;
+        }
+
         Vector3 mousePosition = Input.mousePosition;
         mousePosition = Camera.main.ScreenToWorldPoint(mousePosition);
 

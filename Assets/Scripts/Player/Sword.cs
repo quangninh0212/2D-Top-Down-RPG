@@ -73,12 +73,23 @@ public class Sword : MonoBehaviour, IWeapon
 
     private void MouseFollowWithOffset()
     {
-        Vector3 mousePos = Input.mousePosition;
-        Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(PlayerController.Instance.transform.position);
+        bool pointingLeft;
+        float angle;
 
-        float angle = Mathf.Atan2(mousePos.y, mousePos.x) * Mathf.Rad2Deg;
+        if (MobileInput.TryGetAimDirection(out Vector2 aimDirection))
+        {
+            pointingLeft = aimDirection.x < 0;
+            angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+        }
+        else
+        {
+            Vector3 mousePos = Input.mousePosition;
+            Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(PlayerController.Instance.transform.position);
+            pointingLeft = mousePos.x < playerScreenPoint.x;
+            angle = Mathf.Atan2(mousePos.y, mousePos.x) * Mathf.Rad2Deg;
+        }
 
-        if (mousePos.x < playerScreenPoint.x)
+        if (pointingLeft)
         {
             ActiveWeapon.Instance.transform.rotation = Quaternion.Euler(0, -180, angle);
             weaponCollider.transform.rotation = Quaternion.Euler(0, -180, 0);

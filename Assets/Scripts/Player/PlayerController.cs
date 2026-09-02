@@ -62,7 +62,8 @@ public class PlayerController : Singleton<PlayerController>
 
     private void PlayerInput()
     {
-        movement = playerControls.Movement.Move.ReadValue<Vector2>();
+        Vector2 keyboardMove = playerControls.Movement.Move.ReadValue<Vector2>();
+        movement = keyboardMove.sqrMagnitude > 0.01f ? keyboardMove : MobileInput.MoveInput;
 
         myAnimator.SetFloat("moveX", movement.x);
         myAnimator.SetFloat("moveY", movement.y);
@@ -75,10 +76,20 @@ public class PlayerController : Singleton<PlayerController>
 
     private void AdjustPlayerFacingDirection()
     {
-        Vector3 mousePos = Input.mousePosition;
-        Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(transform.position);
+        float facingX;
 
-        if (mousePos.x < playerScreenPoint.x)
+        if (MobileInput.TryGetAimDirection(out Vector2 aimDirection))
+        {
+            facingX = aimDirection.x;
+        }
+        else
+        {
+            Vector3 mousePos = Input.mousePosition;
+            Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(transform.position);
+            facingX = mousePos.x - playerScreenPoint.x;
+        }
+
+        if (facingX < 0)
         {
             mySpriteRender.flipX = true;
             facingLeft = true;
@@ -89,6 +100,9 @@ public class PlayerController : Singleton<PlayerController>
             facingLeft = false;
         }
     }
+
+    // Called from the on-screen Dash button on touch devices.
+    public void TouchDash() => Dash();
 
     private void Dash()
     {
