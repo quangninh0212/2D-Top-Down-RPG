@@ -15,10 +15,8 @@ public class Shooter : MonoBehaviour, IEnemy
 
     private bool isShooting = false;
 
-    public void Attack()
-    {
-        if (!isShooting)
-        {
+    public void Attack() {
+        if (!isShooting) {
             StartCoroutine(ShootRoutine());
         }
     }
@@ -40,7 +38,7 @@ public class Shooter : MonoBehaviour, IEnemy
                 GameObject newBullet = Instantiate(bulletPrefab, pos, Quaternion.identity);
                 newBullet.transform.right = newBullet.transform.position - transform.position;
 
-
+            
                 if (newBullet.TryGetComponent(out Projectile projectile))
                 {
                     projectile.UpdateMoveSpeed(bulletMoveSpeed);
@@ -78,8 +76,7 @@ public class Shooter : MonoBehaviour, IEnemy
         }
     }
 
-    private Vector2 FindBulletSpawnPos(float currentAngle)
-    {
+    private Vector2 FindBulletSpawnPos(float currentAngle) {
         float x = transform.position.x + startingDistance * Mathf.Cos(currentAngle * Mathf.Deg2Rad);
         float y = transform.position.y + startingDistance * Mathf.Sin(currentAngle * Mathf.Deg2Rad);
 
