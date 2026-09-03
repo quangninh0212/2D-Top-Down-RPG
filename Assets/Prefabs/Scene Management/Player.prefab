@@ -42,7 +42,7 @@ Transform:
   - {fileID: 1148050555838464539}
   - {fileID: 1457158650968079605}
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3651060595845459801
 SpriteRenderer:
@@ -261,8 +261,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 402cae854bca0c341b0373d1bca0d424, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fullStaminaImage: {fileID: 0}
-  emptyStaminaImage: {fileID: 0}
+  fullStaminaImage: {fileID: 21300000, guid: 7fe1b7a96ea4a904894f372002cbfb64, type: 3}
+  emptyStaminaImage: {fileID: 21300000, guid: 4441b9285bbc3d94892b2454dafc1359, type: 3}
   timeBetweenStaminaRefresh: 3
 --- !u!1 &2610579921213329204
 GameObject:
