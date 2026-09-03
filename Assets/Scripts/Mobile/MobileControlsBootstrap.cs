@@ -21,6 +21,7 @@ public class MobileControlsBootstrap : MonoBehaviour
 
     private readonly List<OnScreenJoystick> joysticks = new List<OnScreenJoystick>();
     private TouchAimZone aimZone;
+    private GameObject controlsRoot;
     private RectTransform safeAreaRect;
     private Rect lastSafeArea;
     private Text debugText;
@@ -47,6 +48,7 @@ public class MobileControlsBootstrap : MonoBehaviour
     private void Awake()
     {
         BuildUI();
+        ApplySceneVisibility(SceneManager.GetActiveScene().name);
     }
 
     private void OnEnable()
@@ -65,6 +67,14 @@ public class MobileControlsBootstrap : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         ReleaseAllSticks();
+        ApplySceneVisibility(scene.name);
+    }
+
+    // The controls must not exist over the menu: their touch zones sit above
+    // everything else and would swallow every button press.
+    private void ApplySceneVisibility(string sceneName)
+    {
+        if (controlsRoot != null) { controlsRoot.SetActive(sceneName != MainMenu.MenuSceneName); }
     }
 
     // Switching away from the game on a phone loses the touch the same way.
@@ -118,6 +128,7 @@ public class MobileControlsBootstrap : MonoBehaviour
     {
         GameObject canvasGO = new GameObject("MobileControlsCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasGO.transform.SetParent(transform, false);
+        controlsRoot = canvasGO;
 
         Canvas canvas = canvasGO.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
