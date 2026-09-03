@@ -10,9 +10,8 @@ public class GrapeProjectile : MonoBehaviour
     [SerializeField] private GameObject grapeProjectileShadow;
     [SerializeField] private GameObject splatterPrefab;
 
-    private void Start()
-    {
-        GameObject grapeShadow =
+    private void Start() {
+        GameObject grapeShadow = 
         Instantiate(grapeProjectileShadow, transform.position + new Vector3(0, -0.3f, 0), Quaternion.identity);
 
         Vector3 playerPos = PlayerController.Instance.transform.position;
@@ -22,8 +21,7 @@ public class GrapeProjectile : MonoBehaviour
         StartCoroutine(MoveGrapeShadowRoutine(grapeShadow, grapeShadowStartPosition, playerPos));
     }
 
-    private IEnumerator ProjectileCurveRoutine(Vector3 startPosition, Vector3 endPosition)
-    {
+    private IEnumerator ProjectileCurveRoutine(Vector3 startPosition, Vector3 endPosition) {
         float timePassed = 0f;
 
         while (timePassed < duration)
@@ -41,11 +39,10 @@ public class GrapeProjectile : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private IEnumerator MoveGrapeShadowRoutine(GameObject grapeShadow, Vector3 startPosition, Vector3 endPosition)
-    {
+    private IEnumerator MoveGrapeShadowRoutine(GameObject grapeShadow, Vector3 startPosition, Vector3 endPosition) {
         float timePassed = 0f;
 
-        while (timePassed < duration)
+        while (timePassed < duration) 
         {
             timePassed += Time.deltaTime;
             float linearT = timePassed / duration;
