@@ -18,8 +18,7 @@ public class Shooter : MonoBehaviour, IEnemy
 
     private bool isShooting = false;
 
-    private void OnValidate()
-    {
+    private void OnValidate() {
         if (oscillate) { stagger = true; }
         if (!oscillate) { stagger = false; }
         if (projectilesPerBurst < 1) { projectilesPerBurst = 1; }
@@ -31,10 +30,8 @@ public class Shooter : MonoBehaviour, IEnemy
         if (bulletMoveSpeed <= 0) { bulletMoveSpeed = 0.1f; }
     }
 
-    public void Attack()
-    {
-        if (!isShooting)
-        {
+    public void Attack() {
+        if (!isShooting) {
             StartCoroutine(ShootRoutine());
         }
     }
@@ -52,17 +49,13 @@ public class Shooter : MonoBehaviour, IEnemy
 
         for (int i = 0; i < burstCount; i++)
         {
-            if (!oscillate)
-            {
+            if (!oscillate) {
                 TargetConeOfInfluence(out startAngle, out currentAngle, out angleStep, out endAngle);
-            }
-
-            if (oscillate && i % 2 != 1)
-            {
+            } 
+            
+            if (oscillate && i % 2 != 1) {
                 TargetConeOfInfluence(out startAngle, out currentAngle, out angleStep, out endAngle);
-            }
-            else if (oscillate)
-            {
+            } else if (oscillate) {
                 currentAngle = endAngle;
                 endAngle = startAngle;
                 startAngle = currentAngle;
@@ -77,7 +70,7 @@ public class Shooter : MonoBehaviour, IEnemy
                 GameObject newBullet = Instantiate(bulletPrefab, pos, Quaternion.identity);
                 newBullet.transform.right = newBullet.transform.position - transform.position;
 
-
+            
                 if (newBullet.TryGetComponent(out Projectile projectile))
                 {
                     projectile.UpdateMoveSpeed(bulletMoveSpeed);
@@ -116,8 +109,7 @@ public class Shooter : MonoBehaviour, IEnemy
         }
     }
 
-    private Vector2 FindBulletSpawnPos(float currentAngle)
-    {
+    private Vector2 FindBulletSpawnPos(float currentAngle) {
         float x = transform.position.x + startingDistance * Mathf.Cos(currentAngle * Mathf.Deg2Rad);
         float y = transform.position.y + startingDistance * Mathf.Sin(currentAngle * Mathf.Deg2Rad);
 
