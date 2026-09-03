@@ -13,36 +13,30 @@ public class PlayerHealth : Singleton<PlayerHealth>
     private Knockback knockback;
     private Flash flash;
 
-    protected override void Awake()
-    {
+    protected override void Awake() {
         base.Awake();
 
         flash = GetComponent<Flash>();
         knockback = GetComponent<Knockback>();
     }
 
-    private void Start()
-    {
+    private void Start() {
         currentHealth = maxHealth;
     }
 
-    private void OnCollisionStay2D(Collision2D other)
-    {
+    private void OnCollisionStay2D(Collision2D other) {
         EnemyAI enemy = other.gameObject.GetComponent<EnemyAI>();
 
-        if (enemy)
-        {
+        if (enemy) {
             TakeDamage(1, other.transform);
         }
     }
 
-    public void HealPlayer()
-    {
+    public void HealPlayer() {
         currentHealth += 1;
     }
 
-    public void TakeDamage(int damageAmount, Transform hitTransform)
-    {
+    public void TakeDamage(int damageAmount, Transform hitTransform) {
         if (!canTakeDamage) { return; }
 
         ScreenShakeManager.Instance.ShakeScreen();
@@ -53,8 +47,7 @@ public class PlayerHealth : Singleton<PlayerHealth>
         StartCoroutine(DamageRecoveryRoutine());
     }
 
-    private IEnumerator DamageRecoveryRoutine()
-    {
+    private IEnumerator DamageRecoveryRoutine() {
         yield return new WaitForSeconds(damageRecoveryTime);
         canTakeDamage = true;
     }
