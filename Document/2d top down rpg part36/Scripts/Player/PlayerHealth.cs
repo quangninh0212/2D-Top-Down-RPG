@@ -13,29 +13,24 @@ public class PlayerHealth : MonoBehaviour
     private Knockback knockback;
     private Flash flash;
 
-    private void Awake()
-    {
+    private void Awake() {
         flash = GetComponent<Flash>();
         knockback = GetComponent<Knockback>();
     }
 
-    private void Start()
-    {
+    private void Start() {
         currentHealth = maxHealth;
     }
 
-    private void OnCollisionStay2D(Collision2D other)
-    {
+    private void OnCollisionStay2D(Collision2D other) {
         EnemyAI enemy = other.gameObject.GetComponent<EnemyAI>();
 
-        if (enemy)
-        {
+        if (enemy) {
             TakeDamage(1, other.transform);
         }
     }
 
-    public void TakeDamage(int damageAmount, Transform hitTransform)
-    {
+    public void TakeDamage(int damageAmount, Transform hitTransform) {
         if (!canTakeDamage) { return; }
 
         ScreenShakeManager.Instance.ShakeScreen();
@@ -46,8 +41,7 @@ public class PlayerHealth : MonoBehaviour
         StartCoroutine(DamageRecoveryRoutine());
     }
 
-    private IEnumerator DamageRecoveryRoutine()
-    {
+    private IEnumerator DamageRecoveryRoutine() {
         yield return new WaitForSeconds(damageRecoveryTime);
         canTakeDamage = true;
     }
