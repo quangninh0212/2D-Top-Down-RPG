@@ -16,42 +16,35 @@ public class PlayerHealth : Singleton<PlayerHealth>
     private Flash flash;
     const string HEALTH_SLIDER_TEXT = "Health Slider";
 
-    protected override void Awake()
-    {
+    protected override void Awake() {
         base.Awake();
 
         flash = GetComponent<Flash>();
         knockback = GetComponent<Knockback>();
     }
 
-    private void Start()
-    {
+    private void Start() {
         currentHealth = maxHealth;
 
         UpdateHealthSlider();
     }
 
-    private void OnCollisionStay2D(Collision2D other)
-    {
+    private void OnCollisionStay2D(Collision2D other) {
         EnemyAI enemy = other.gameObject.GetComponent<EnemyAI>();
 
-        if (enemy)
-        {
+        if (enemy) {
             TakeDamage(1, other.transform);
         }
     }
 
-    public void HealPlayer()
-    {
-        if (currentHealth < maxHealth)
-        {
+    public void HealPlayer() {
+        if (currentHealth < maxHealth) {
             currentHealth += 1;
             UpdateHealthSlider();
         }
     }
 
-    public void TakeDamage(int damageAmount, Transform hitTransform)
-    {
+    public void TakeDamage(int damageAmount, Transform hitTransform) {
         if (!canTakeDamage) { return; }
 
         ScreenShakeManager.Instance.ShakeScreen();
@@ -64,25 +57,20 @@ public class PlayerHealth : Singleton<PlayerHealth>
         CheckIfPlayerDeath();
     }
 
-    private void CheckIfPlayerDeath()
-    {
-        if (currentHealth <= 0)
-        {
+    private void CheckIfPlayerDeath() {
+        if (currentHealth <= 0) {
             currentHealth = 0;
             Debug.Log("Player Death");
         }
     }
 
-    private IEnumerator DamageRecoveryRoutine()
-    {
+    private IEnumerator DamageRecoveryRoutine() {
         yield return new WaitForSeconds(damageRecoveryTime);
         canTakeDamage = true;
     }
 
-    private void UpdateHealthSlider()
-    {
-        if (healthSlider == null)
-        {
+    private void UpdateHealthSlider() {
+        if (healthSlider == null) {
             healthSlider = GameObject.Find(HEALTH_SLIDER_TEXT).GetComponent<Slider>();
         }
 

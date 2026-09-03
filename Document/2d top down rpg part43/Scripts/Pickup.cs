@@ -22,48 +22,38 @@ public class Pickup : MonoBehaviour
     private Vector3 moveDir;
     private Rigidbody2D rb;
 
-    private void Awake()
-    {
+    private void Awake() {
         rb = GetComponent<Rigidbody2D>();
     }
 
-    private void Start()
-    {
+    private void Start() {
         StartCoroutine(AnimCurveSpawnRoutine());
     }
 
-    private void Update()
-    {
+    private void Update() {
         Vector3 playerPos = PlayerController.Instance.transform.position;
 
-        if (Vector3.Distance(transform.position, playerPos) < pickUpDistance)
-        {
+        if (Vector3.Distance(transform.position, playerPos) < pickUpDistance) {
             moveDir = (playerPos - transform.position).normalized;
             moveSpeed += accelartionRate;
-        }
-        else
-        {
+        } else {
             moveDir = Vector3.zero;
             moveSpeed = 0;
         }
     }
 
-    private void FixedUpdate()
-    {
+    private void FixedUpdate() {
         rb.velocity = moveDir * moveSpeed * Time.deltaTime;
     }
 
-    private void OnTriggerStay2D(Collider2D other)
-    {
-        if (other.gameObject.GetComponent<PlayerController>())
-        {
+    private void OnTriggerStay2D(Collider2D other) {
+        if (other.gameObject.GetComponent<PlayerController>()) {
             DetectPickupType();
             Destroy(gameObject);
         }
     }
 
-    private IEnumerator AnimCurveSpawnRoutine()
-    {
+    private IEnumerator AnimCurveSpawnRoutine() {
         Vector2 startPoint = transform.position;
         float randomX = transform.position.x + Random.Range(-2f, 2f);
         float randomY = transform.position.y + Random.Range(-1f, 1f);
@@ -84,8 +74,7 @@ public class Pickup : MonoBehaviour
         }
     }
 
-    private void DetectPickupType()
-    {
+    private void DetectPickupType() {
         switch (pickUpType)
         {
             case PickUpType.GoldCoin:
