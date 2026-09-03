@@ -11,33 +11,27 @@ public class MagicLaser : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private CapsuleCollider2D capsuleCollider2D;
 
-    private void Awake()
-    {
+    private void Awake() {
         spriteRenderer = GetComponent<SpriteRenderer>();
         capsuleCollider2D = GetComponent<CapsuleCollider2D>();
     }
 
-    private void Start()
-    {
+    private void Start() {
         LaserFaceMouse();
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.gameObject.GetComponent<Indestructible>() && !other.isTrigger)
-        {
+    private void OnTriggerEnter2D(Collider2D other) {
+        if (other.gameObject.GetComponent<Indestructible>() && !other.isTrigger) {
             isGrowing = false;
         }
     }
 
-    public void UpdateLaserRange(float laserRange)
-    {
+    public void UpdateLaserRange(float laserRange) {
         this.laserRange = laserRange;
         StartCoroutine(IncreaseLaserLengthRoutine());
     }
 
-    private IEnumerator IncreaseLaserLengthRoutine()
-    {
+    private IEnumerator IncreaseLaserLengthRoutine() {
         float timePassed = 0f;
 
         while (spriteRenderer.size.x < laserRange && isGrowing)
@@ -58,8 +52,7 @@ public class MagicLaser : MonoBehaviour
         StartCoroutine(GetComponent<SpriteFade>().SlowFadeRoutine());
     }
 
-    private void LaserFaceMouse()
-    {
+    private void LaserFaceMouse() {
         Vector3 mousePosition = Input.mousePosition;
         mousePosition = Camera.main.ScreenToWorldPoint(mousePosition);
         Vector2 direction = transform.position - mousePosition;
