@@ -23,6 +23,12 @@ public class MobileControlsBootstrap : MonoBehaviour
     private Rect lastSafeArea;
     private Text debugText;
 
+    // Unity's built-in UI skin sprites come out as flat squares here, so the
+    // control artwork is drawn from scratch instead.
+    private Sprite ringSprite;
+    private Sprite knobSprite;
+    private Sprite buttonSprite;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Install()
     {
@@ -127,6 +133,8 @@ public class MobileControlsBootstrap : MonoBehaviour
         safeAreaRect.offsetMax = Vector2.zero;
         ApplySafeArea();
 
+        CreateControlSprites();
+
         CreateJoystick(OnScreenJoystick.Role.Move,
                        new Vector2(0f, TouchZoneBottom), new Vector2(0.45f, 1f));
         CreateJoystick(OnScreenJoystick.Role.Aim,
@@ -153,11 +161,58 @@ public class MobileControlsBootstrap : MonoBehaviour
         safeAreaRect.anchorMax = new Vector2(safeArea.xMax / Screen.width, safeArea.yMax / Screen.height);
     }
 
+    // Draws a filled circle with an outline ring. Both edges fade across one
+    // pixel, which is what keeps the curve smooth at any on-screen size.
+    private static Sprite CreateDiscSprite(int size, float outlineWidth, Color fill, Color outline)
+    {
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear
+        };
+
+        float radius = size * 0.5f;
+        float outerEdge = radius - 1f;
+        float innerEdge = outerEdge - outlineWidth;
+        Vector2 centre = new Vector2(radius, radius);
+        Color[] pixels = new Color[size * size];
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), centre);
+
+                float coverage = Mathf.Clamp01(outerEdge - distance + 0.5f);
+                float onOutline = Mathf.Clamp01(distance - innerEdge + 0.5f);
+
+                Color colour = Color.Lerp(fill, outline, onOutline);
+                colour.a *= coverage;
+                pixels[y * size + x] = colour;
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+
+        return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
+    }
+
+    private void CreateControlSprites()
+    {
+        // Hollow ring for the stick base, so it never hides the game behind it.
+        ringSprite = CreateDiscSprite(192, 10f,
+            new Color(1f, 1f, 1f, 0.06f), new Color(1f, 1f, 1f, 0.42f));
+
+        knobSprite = CreateDiscSprite(128, 6f,
+            new Color(1f, 1f, 1f, 0.5f), new Color(1f, 1f, 1f, 0.92f));
+
+        buttonSprite = CreateDiscSprite(160, 6f,
+            new Color(0.06f, 0.07f, 0.10f, 0.62f), new Color(1f, 0.93f, 0.75f, 0.85f));
+    }
+
     private void CreateJoystick(OnScreenJoystick.Role role, Vector2 anchorMin, Vector2 anchorMax)
     {
-        Sprite bgSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
-        Sprite knobSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
-
         // Invisible full-height zone that catches the touch anywhere on its side
         // of the screen. A transparent Image still receives raycasts.
         GameObject zoneGO = new GameObject(role + "TouchZone", typeof(Image));
@@ -179,9 +234,7 @@ public class MobileControlsBootstrap : MonoBehaviour
         bgRect.anchoredPosition = new Vector2(0f, -40f);   // resting spot, kept clear of the bottom
 
         Image bgImage = bgGO.GetComponent<Image>();
-        bgImage.sprite = bgSprite;
-        bgImage.type = Image.Type.Sliced;
-        bgImage.color = new Color(1f, 1f, 1f, 0.3f);
+        bgImage.sprite = ringSprite;
         bgImage.raycastTarget = false;
 
         GameObject handleGO = new GameObject(role + "JoystickHandle", typeof(Image));
@@ -195,7 +248,6 @@ public class MobileControlsBootstrap : MonoBehaviour
 
         Image handleImage = handleGO.GetComponent<Image>();
         handleImage.sprite = knobSprite;
-        handleImage.color = new Color(1f, 1f, 1f, 0.8f);
         handleImage.raycastTarget = false;
 
         OnScreenJoystick joystick = zoneGO.AddComponent<OnScreenJoystick>();
@@ -205,7 +257,7 @@ public class MobileControlsBootstrap : MonoBehaviour
 
     private void CreateActionButtons()
     {
-        CreateButton("DashButton", "DASH", new Vector2(1f, 0.5f), new Vector2(-160f, -60f), () =>
+        CreateButton("DashButton", "DASH", new Vector2(-150f, -85f), () =>
         {
             if (PlayerAlive() && PlayerController.Instance != null)
             {
@@ -215,7 +267,7 @@ public class MobileControlsBootstrap : MonoBehaviour
 
         // The inventory bar sits at the very bottom of the screen, which is hard
         // to hit on a phone, so weapons can also be cycled from here.
-        CreateButton("WeaponButton", "WEAPON", new Vector2(1f, 0.5f), new Vector2(-160f, 80f), () =>
+        CreateButton("WeaponButton", "SWAP", new Vector2(-150f, 85f), () =>
         {
             if (PlayerAlive() && ActiveInventory.Instance != null)
             {
@@ -224,23 +276,19 @@ public class MobileControlsBootstrap : MonoBehaviour
         });
     }
 
-    private void CreateButton(string name, string label, Vector2 anchor, Vector2 anchoredPosition, UnityEngine.Events.UnityAction onClick)
+    private void CreateButton(string name, string label, Vector2 anchoredPosition, UnityEngine.Events.UnityAction onClick)
     {
-        Sprite buttonSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
-
         GameObject buttonGO = new GameObject(name, typeof(Image), typeof(Button));
         buttonGO.transform.SetParent(safeAreaRect, false);
         RectTransform rect = buttonGO.GetComponent<RectTransform>();
-        rect.anchorMin = anchor;
-        rect.anchorMax = anchor;
+        rect.anchorMin = new Vector2(1f, 0.5f);
+        rect.anchorMax = new Vector2(1f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(190f, 110f);
+        rect.sizeDelta = new Vector2(150f, 150f);
         rect.anchoredPosition = anchoredPosition;
 
         Image image = buttonGO.GetComponent<Image>();
         image.sprite = buttonSprite;
-        image.type = Image.Type.Sliced;
-        image.color = new Color(1f, 1f, 1f, 0.55f);
 
         GameObject textGO = new GameObject("Text", typeof(Text));
         textGO.transform.SetParent(buttonGO.transform, false);
@@ -254,28 +302,39 @@ public class MobileControlsBootstrap : MonoBehaviour
         text.text = label;
         text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         text.fontSize = 30;
+        text.fontStyle = FontStyle.Bold;
         text.alignment = TextAnchor.MiddleCenter;
-        text.color = Color.black;
+        text.color = new Color(1f, 0.96f, 0.86f);
         text.raycastTarget = false;
 
-        buttonGO.GetComponent<Button>().onClick.AddListener(onClick);
+        Button button = buttonGO.GetComponent<Button>();
+        ColorBlock colours = button.colors;
+        colours.normalColor = Color.white;
+        colours.highlightedColor = Color.white;
+        colours.pressedColor = new Color(1f, 0.82f, 0.45f);   // warm flash on press
+        colours.selectedColor = Color.white;
+        colours.fadeDuration = 0.06f;
+        button.colors = colours;
+        button.onClick.AddListener(onClick);
     }
 
     private void CreateDebugReadout()
     {
         GameObject textGO = new GameObject("DebugReadout", typeof(Text));
         textGO.transform.SetParent(safeAreaRect, false);
+        // Bottom centre, out of the way of the health and stamina UI.
         RectTransform rect = textGO.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0f, 1f);
-        rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.sizeDelta = new Vector2(1400f, 60f);
-        rect.anchoredPosition = new Vector2(20f, -20f);
+        rect.anchorMin = new Vector2(0.5f, 0f);
+        rect.anchorMax = new Vector2(0.5f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.sizeDelta = new Vector2(1400f, 40f);
+        rect.anchoredPosition = new Vector2(0f, 24f);
 
         debugText = textGO.GetComponent<Text>();
         debugText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        debugText.fontSize = 34;
-        debugText.color = Color.yellow;
+        debugText.fontSize = 22;
+        debugText.alignment = TextAnchor.MiddleCenter;
+        debugText.color = new Color(1f, 1f, 0.4f, 0.6f);
         debugText.raycastTarget = false;
     }
 }
