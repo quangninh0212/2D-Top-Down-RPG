@@ -98,6 +98,67 @@ public static class MenuArt
         return Finish(texture, pixels, Vector4.zero);
     }
 
+    // A doorway: straight sides with a domed top, drawn as a frame with the
+    // opening left clear so whatever sits behind it shows through.
+    public static Sprite Arch(int width, int height, float frameThickness, Color frame)
+    {
+        Texture2D texture = NewTexture(width, height);
+        Color[] pixels = new Color[width * height];
+
+        float centreX = width * 0.5f;
+        float halfWidth = width * 0.5f - 2f;
+        float springLine = height - halfWidth - 2f;   // where the sides meet the dome
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float px = x + 0.5f;
+                float py = y + 0.5f;
+
+                // Distance to the outline: negative inside, positive outside.
+                float distance = py <= springLine
+                    ? Mathf.Abs(px - centreX) - halfWidth
+                    : Vector2.Distance(new Vector2(px, py), new Vector2(centreX, springLine)) - halfWidth;
+
+                float insideShape = Mathf.Clamp01(0.5f - distance);
+                float insideOpening = Mathf.Clamp01(0.5f - (distance + frameThickness));
+
+                Color colour = frame;
+                colour.a *= insideShape * (1f - insideOpening);
+                pixels[y * width + x] = colour;
+            }
+        }
+
+        return Finish(texture, pixels, Vector4.zero);
+    }
+
+    // Rolling silhouette for the parallax layers. The waves complete a whole
+    // number of cycles across the texture, so copies sit side by side seamlessly.
+    public static Sprite HillBand(int width, int height, float baseHeight, float amplitude, float phase, Color colour)
+    {
+        Texture2D texture = NewTexture(width, height);
+        Color[] pixels = new Color[width * height];
+
+        for (int x = 0; x < width; x++)
+        {
+            float t = x / (float)width;
+            float crest = baseHeight + amplitude * (
+                0.60f * Mathf.Sin(Mathf.PI * 2f * t + phase) +
+                0.28f * Mathf.Sin(Mathf.PI * 4f * t + phase * 1.7f) +
+                0.12f * Mathf.Sin(Mathf.PI * 6f * t + phase * 2.3f));
+
+            for (int y = 0; y < height; y++)
+            {
+                Color pixel = colour;
+                pixel.a *= Mathf.Clamp01(crest - y + 0.5f);
+                pixels[y * width + x] = pixel;
+            }
+        }
+
+        return Finish(texture, pixels, Vector4.zero);
+    }
+
     public static Sprite Solid(Color colour)
     {
         Texture2D texture = NewTexture(4, 4);
