@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 116994188974178587}
   - component: {fileID: 588832542678227250}
   - component: {fileID: 3241648559394608365}
+  - component: {fileID: -2496375792847809509}
   m_Layer: 0
   m_Name: Bush
   m_TagString: Untagged
@@ -32,7 +33,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &116994188974178587
 SpriteRenderer:
@@ -134,3 +135,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   destroyVFX: {fileID: 567646217129372142, guid: 5a56ee17d5f9c8e4eaf1bdca89dbbe79, type: 3}
+--- !u!114 &-2496375792847809509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 703435471281042056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b841df24d274fa24180449a4749a5a78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  goldCoin: {fileID: 4365775749488099736, guid: be3693e822d1d4d468067696a7824314, type: 3}
+  healthGlobe: {fileID: 4365775749488099736, guid: 7e8c3dd90a5a6564da8d6f9635312edd, type: 3}
+  staminaGlobe: {fileID: 4365775749488099736, guid: d9bde78e513af95468371b93d3240a6b, type: 3}

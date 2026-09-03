@@ -167,10 +167,9 @@ public class MobileControlsBootstrap : MonoBehaviour
         // to hit on a phone, so weapons can also be cycled from here.
         CreateButton("WeaponButton", "WEAPON", new Vector2(1f, 0.5f), new Vector2(-160f, 80f), () =>
         {
-            ActiveInventory inventory = FindObjectOfType<ActiveInventory>();
-            if (inventory != null)
+            if (ActiveInventory.Instance != null)
             {
-                inventory.SelectNextSlot();
+                ActiveInventory.Instance.SelectNextSlot();
             }
         });
     }
