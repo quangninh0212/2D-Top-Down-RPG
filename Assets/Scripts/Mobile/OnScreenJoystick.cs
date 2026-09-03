@@ -66,24 +66,38 @@ public class OnScreenJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler
         Apply(Vector2.zero);
     }
 
+    // Clears the stick without needing a touch to end - used when the scene
+    // changes or the app loses focus, where OnPointerUp never arrives.
+    public void ResetStick()
+    {
+        if (background != null) { background.anchoredPosition = restingPosition; }
+        if (handle != null) { handle.anchoredPosition = Vector2.zero; }
+
+        Apply(Vector2.zero);
+    }
+
     private void Apply(Vector2 value)
     {
         if (joystickRole == Role.Move)
         {
             MobileInput.MoveInput = value;
+            return;
+        }
+
+        // Note: no null-conditional operator here. It bypasses Unity's overloaded
+        // equality, so a destroyed ActiveWeapon (the player's death destroys it)
+        // would not be treated as null.
+        bool weaponAlive = ActiveWeapon.Instance != null;
+
+        if (value == Vector2.zero)
+        {
+            MobileInput.ClearAim();
+            if (weaponAlive) { ActiveWeapon.Instance.StopAttackingTouch(); }
         }
         else
         {
-            if (value == Vector2.zero)
-            {
-                MobileInput.ClearAim();
-                ActiveWeapon.Instance?.StopAttackingTouch();
-            }
-            else
-            {
-                MobileInput.SetAim(value);
-                ActiveWeapon.Instance?.StartAttackingTouch();
-            }
+            MobileInput.SetAim(value);
+            if (weaponAlive) { ActiveWeapon.Instance.StartAttackingTouch(); }
         }
     }
 }
