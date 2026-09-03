@@ -1,4 +1,4 @@
-# TÀI LIỆU BÁO CÁO DỰ ÁN — 2D TOP DOWN RPG
+# TÀI LIỆU BÁO CÁO DỰ ÁN — SOULBOUND GATE (2D TOP DOWN RPG)
 
 ---
 
@@ -25,7 +25,7 @@
 
 | Hạng mục | Nội dung |
 |---|---|
-| Tên dự án | TopDownRPG (2D Top Down RPG) |
+| Tên dự án | Soulbound Gate (game nhập vai 2D góc nhìn từ trên xuống) |
 | Thể loại | Action RPG, góc nhìn từ trên xuống (top-down), đồ họa 2D pixel |
 | Game engine | Unity 2022.3.3f1 (bản LTS) |
 | Ngôn ngữ lập trình | C# |

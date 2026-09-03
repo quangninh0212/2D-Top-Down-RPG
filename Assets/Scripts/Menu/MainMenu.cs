@@ -126,25 +126,17 @@ public class MainMenu : MonoBehaviour
 
     private void BuildBackground()
     {
-        Image backdrop = NewImage("Backdrop", root);
-        Stretch(backdrop.rectTransform);
-        backdrop.sprite = MenuArt.VerticalGradient(64,
-            new Color(0.02f, 0.05f, 0.04f), new Color(0.07f, 0.16f, 0.11f));
-        backdrop.raycastTarget = false;
+        GameObject backgroundGO = new GameObject("Background", typeof(RectTransform));
+        backgroundGO.transform.SetParent(root, false);
 
-        GameObject motesGO = new GameObject("Motes", typeof(RectTransform));
-        motesGO.transform.SetParent(root, false);
-        Stretch((RectTransform)motesGO.transform);
+        RectTransform backgroundRect = (RectTransform)backgroundGO.transform;
+        Stretch(backgroundRect);
 
-        MenuBackground background = motesGO.AddComponent<MenuBackground>();
-        background.Build((RectTransform)motesGO.transform, MenuArt.SoftGlow(64, Color.white));
+        // Laid out against the canvas size, which is only correct after the
+        // layout system has run once on the freshly built hierarchy.
+        Canvas.ForceUpdateCanvases();
 
-        // Darkened edges, so the menu text always sits on something quiet.
-        Image vignette = NewImage("Vignette", root);
-        Stretch(vignette.rectTransform);
-        vignette.sprite = MenuArt.VerticalGradient(64,
-            new Color(0f, 0f, 0f, 0.55f), new Color(0f, 0f, 0f, 0.15f));
-        vignette.raycastTarget = false;
+        backgroundGO.AddComponent<MenuBackground>().Build(backgroundRect);
     }
 
     // ----- panels ---------------------------------------------------------
@@ -156,7 +148,7 @@ public class MainMenu : MonoBehaviour
         RectTransform emblem = BuildLogo(group.transform, 300f);
         emblem.anchoredPosition = new Vector2(0f, 90f);
 
-        Text title = NewText("Title", group.transform, "TOP DOWN RPG", titleFont, 88);
+        Text title = NewText("Title", group.transform, "SOULBOUND GATE", titleFont, 88);
         title.rectTransform.anchoredPosition = new Vector2(0f, -140f);
         title.rectTransform.sizeDelta = new Vector2(1400f, 120f);
         title.color = new Color(1f, 0.93f, 0.76f);
@@ -178,7 +170,7 @@ public class MainMenu : MonoBehaviour
         emblem.anchorMax = new Vector2(0.5f, 1f);
         emblem.anchoredPosition = new Vector2(0f, -180f);
 
-        Text title = NewText("Title", group.transform, "TOP DOWN RPG", titleFont, 68);
+        Text title = NewText("Title", group.transform, "SOULBOUND GATE", titleFont, 68);
         title.rectTransform.anchorMin = new Vector2(0.5f, 1f);
         title.rectTransform.anchorMax = new Vector2(0.5f, 1f);
         title.rectTransform.anchoredPosition = new Vector2(0f, -330f);
