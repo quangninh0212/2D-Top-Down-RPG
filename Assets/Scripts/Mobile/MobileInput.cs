@@ -26,4 +26,14 @@ public static class MobileInput
         direction = aimDirection;
         return aimActive;
     }
+
+    // Static state outlives scene loads, so it has to be cleared explicitly.
+    // Without this, dying (or any scene change) while holding a stick leaves the
+    // respawned player running and attacking with no touch left to cancel it.
+    public static void ResetAll()
+    {
+        MoveInput = Vector2.zero;
+        aimDirection = Vector2.zero;
+        aimActive = false;
+    }
 }

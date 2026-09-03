@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // Spawns the on-screen movement stick, aim stick and Dash button at game start.
@@ -16,6 +18,7 @@ public class MobileControlsBootstrap : MonoBehaviour
     // wherever the thumb lands, so they only need the zone to be reachable.
     private const float TouchZoneBottom = 0.2f;
 
+    private readonly List<OnScreenJoystick> joysticks = new List<OnScreenJoystick>();
     private RectTransform safeAreaRect;
     private Rect lastSafeArea;
     private Text debugText;
@@ -36,6 +39,52 @@ public class MobileControlsBootstrap : MonoBehaviour
     private void Awake()
     {
         BuildUI();
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // The controls survive scene loads but the EventSystem does not, so a touch
+    // held across a load (dying, or walking through a door) never reports its
+    // release. Clear the sticks whenever the world is rebuilt.
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ReleaseAllSticks();
+    }
+
+    // Switching away from the game on a phone loses the touch the same way.
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) { ReleaseAllSticks(); }
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus) { ReleaseAllSticks(); }
+    }
+
+    // On death the player's weapon object is destroyed while the death animation
+    // plays, so the buttons must not reach into it during that window.
+    private static bool PlayerAlive()
+    {
+        return PlayerHealth.Instance != null && !PlayerHealth.Instance.isDead;
+    }
+
+    private void ReleaseAllSticks()
+    {
+        foreach (OnScreenJoystick joystick in joysticks)
+        {
+            if (joystick != null) { joystick.ResetStick(); }
+        }
+
+        MobileInput.ResetAll();
     }
 
     private void Update()
@@ -151,13 +200,14 @@ public class MobileControlsBootstrap : MonoBehaviour
 
         OnScreenJoystick joystick = zoneGO.AddComponent<OnScreenJoystick>();
         joystick.Init(role, zoneRect, bgRect, handleRect, 90f);
+        joysticks.Add(joystick);
     }
 
     private void CreateActionButtons()
     {
         CreateButton("DashButton", "DASH", new Vector2(1f, 0.5f), new Vector2(-160f, -60f), () =>
         {
-            if (PlayerController.Instance != null)
+            if (PlayerAlive() && PlayerController.Instance != null)
             {
                 PlayerController.Instance.TouchDash();
             }
@@ -167,7 +217,7 @@ public class MobileControlsBootstrap : MonoBehaviour
         // to hit on a phone, so weapons can also be cycled from here.
         CreateButton("WeaponButton", "WEAPON", new Vector2(1f, 0.5f), new Vector2(-160f, 80f), () =>
         {
-            if (ActiveInventory.Instance != null)
+            if (PlayerAlive() && ActiveInventory.Instance != null)
             {
                 ActiveInventory.Instance.SelectNextSlot();
             }
