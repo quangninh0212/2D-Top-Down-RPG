@@ -17075,6 +17075,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: UICanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 1657274669096424999, guid: bef268a1314fd2a429f9298c9726664d, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1657274669096424999, guid: bef268a1314fd2a429f9298c9726664d, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6088296621920847525, guid: bef268a1314fd2a429f9298c9726664d, type: 3}
       propertyPath: m_Pivot.x
       value: 0
