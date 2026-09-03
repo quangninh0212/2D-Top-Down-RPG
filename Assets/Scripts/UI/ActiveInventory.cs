@@ -41,26 +41,6 @@ public class ActiveInventory : Singleton<ActiveInventory>
         ToggleActiveHighlight(indexNum);
     }
 
-    // Used by the on-screen weapon button, for when the inventory bar itself
-    // is awkward to tap on a phone. Empty slots are skipped - equipping one
-    // would dereference a missing WeaponInfo.
-    public void SelectNextSlot()
-    {
-        int slotCount = transform.childCount;
-
-        for (int step = 1; step <= slotCount; step++)
-        {
-            int candidate = (activeSlotIndexNum + step) % slotCount;
-
-            InventorySlot slot = transform.GetChild(candidate).GetComponentInChildren<InventorySlot>();
-            if (slot != null && slot.GetWeaponInfo() != null)
-            {
-                ToggleActiveHighlight(candidate);
-                return;
-            }
-        }
-    }
-
     private void ToggleActiveHighlight(int indexNum)
     {
         activeSlotIndexNum = indexNum;

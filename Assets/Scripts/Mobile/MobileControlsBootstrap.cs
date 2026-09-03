@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// Spawns the on-screen movement stick, aim stick and Dash button at game start.
+// Spawns the on-screen movement stick, the tap-to-attack zone and the Dash
+// button at game start.
 // Built entirely from code so no scene/prefab wiring is required at all - it
 // self-installs on load, and only shows on Android/iOS builds (plus the Editor,
 // so it's visible in Play Mode while iterating).
@@ -19,6 +20,7 @@ public class MobileControlsBootstrap : MonoBehaviour
     private const float TouchZoneBottom = 0.2f;
 
     private readonly List<OnScreenJoystick> joysticks = new List<OnScreenJoystick>();
+    private TouchAimZone aimZone;
     private RectTransform safeAreaRect;
     private Rect lastSafeArea;
     private Text debugText;
@@ -90,6 +92,8 @@ public class MobileControlsBootstrap : MonoBehaviour
             if (joystick != null) { joystick.ResetStick(); }
         }
 
+        if (aimZone != null) { aimZone.Release(); }
+
         MobileInput.ResetAll();
     }
 
@@ -135,10 +139,8 @@ public class MobileControlsBootstrap : MonoBehaviour
 
         CreateControlSprites();
 
-        CreateJoystick(OnScreenJoystick.Role.Move,
-                       new Vector2(0f, TouchZoneBottom), new Vector2(0.45f, 1f));
-        CreateJoystick(OnScreenJoystick.Role.Aim,
-                       new Vector2(0.55f, TouchZoneBottom), new Vector2(1f, 1f));
+        CreateJoystick(new Vector2(0f, TouchZoneBottom), new Vector2(0.45f, 1f));
+        CreateAimZone(new Vector2(0.45f, TouchZoneBottom), new Vector2(1f, 1f));
         CreateActionButtons();
 
         if (ShowDebugReadout)
@@ -211,11 +213,11 @@ public class MobileControlsBootstrap : MonoBehaviour
             new Color(0.06f, 0.07f, 0.10f, 0.62f), new Color(1f, 0.93f, 0.75f, 0.85f));
     }
 
-    private void CreateJoystick(OnScreenJoystick.Role role, Vector2 anchorMin, Vector2 anchorMax)
+    private void CreateJoystick(Vector2 anchorMin, Vector2 anchorMax)
     {
         // Invisible full-height zone that catches the touch anywhere on its side
         // of the screen. A transparent Image still receives raycasts.
-        GameObject zoneGO = new GameObject(role + "TouchZone", typeof(Image));
+        GameObject zoneGO = new GameObject("MoveTouchZone", typeof(Image));
         zoneGO.transform.SetParent(safeAreaRect, false);
         RectTransform zoneRect = zoneGO.GetComponent<RectTransform>();
         zoneRect.anchorMin = anchorMin;
@@ -224,20 +226,20 @@ public class MobileControlsBootstrap : MonoBehaviour
         zoneRect.offsetMax = Vector2.zero;
         zoneGO.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
 
-        GameObject bgGO = new GameObject(role + "JoystickBackground", typeof(Image));
+        GameObject bgGO = new GameObject("JoystickBackground", typeof(Image));
         bgGO.transform.SetParent(zoneGO.transform, false);
         RectTransform bgRect = bgGO.GetComponent<RectTransform>();
         bgRect.anchorMin = new Vector2(0.5f, 0.5f);
         bgRect.anchorMax = new Vector2(0.5f, 0.5f);
         bgRect.pivot = new Vector2(0.5f, 0.5f);
         bgRect.sizeDelta = new Vector2(240f, 240f);
-        bgRect.anchoredPosition = new Vector2(0f, -40f);   // resting spot, kept clear of the bottom
+        bgRect.anchoredPosition = new Vector2(0f, -170f);   // sits low, where the thumb rests
 
         Image bgImage = bgGO.GetComponent<Image>();
         bgImage.sprite = ringSprite;
         bgImage.raycastTarget = false;
 
-        GameObject handleGO = new GameObject(role + "JoystickHandle", typeof(Image));
+        GameObject handleGO = new GameObject("JoystickHandle", typeof(Image));
         handleGO.transform.SetParent(bgGO.transform, false);
         RectTransform handleRect = handleGO.GetComponent<RectTransform>();
         handleRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -251,27 +253,47 @@ public class MobileControlsBootstrap : MonoBehaviour
         handleImage.raycastTarget = false;
 
         OnScreenJoystick joystick = zoneGO.AddComponent<OnScreenJoystick>();
-        joystick.Init(role, zoneRect, bgRect, handleRect, 90f);
+        joystick.Init(zoneRect, bgRect, handleRect, 90f);
         joysticks.Add(joystick);
+    }
+
+    // Tap-to-attack side. No stick here: the player taps the spot they want to
+    // hit, and a ring marks where the attack is aimed.
+    private void CreateAimZone(Vector2 anchorMin, Vector2 anchorMax)
+    {
+        GameObject zoneGO = new GameObject("AimTouchZone", typeof(Image));
+        zoneGO.transform.SetParent(safeAreaRect, false);
+        RectTransform zoneRect = zoneGO.GetComponent<RectTransform>();
+        zoneRect.anchorMin = anchorMin;
+        zoneRect.anchorMax = anchorMax;
+        zoneRect.offsetMin = Vector2.zero;
+        zoneRect.offsetMax = Vector2.zero;
+        zoneGO.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+
+        GameObject markerGO = new GameObject("AimMarker", typeof(Image));
+        markerGO.transform.SetParent(zoneGO.transform, false);
+        RectTransform markerRect = markerGO.GetComponent<RectTransform>();
+        markerRect.anchorMin = new Vector2(0.5f, 0.5f);
+        markerRect.anchorMax = new Vector2(0.5f, 0.5f);
+        markerRect.pivot = new Vector2(0.5f, 0.5f);
+        markerRect.sizeDelta = new Vector2(120f, 120f);
+
+        Image markerImage = markerGO.GetComponent<Image>();
+        markerImage.sprite = ringSprite;
+        markerImage.color = new Color(1f, 0.85f, 0.55f);   // warm, reads as a target
+        markerImage.raycastTarget = false;
+
+        aimZone = zoneGO.AddComponent<TouchAimZone>();
+        aimZone.Init(zoneRect, markerRect);
     }
 
     private void CreateActionButtons()
     {
-        CreateButton("DashButton", "DASH", new Vector2(-150f, -85f), () =>
+        CreateButton("DashButton", "DASH", new Vector2(-150f, 0f), () =>
         {
             if (PlayerAlive() && PlayerController.Instance != null)
             {
                 PlayerController.Instance.TouchDash();
-            }
-        });
-
-        // The inventory bar sits at the very bottom of the screen, which is hard
-        // to hit on a phone, so weapons can also be cycled from here.
-        CreateButton("WeaponButton", "SWAP", new Vector2(-150f, 85f), () =>
-        {
-            if (PlayerAlive() && ActiveInventory.Instance != null)
-            {
-                ActiveInventory.Instance.SelectNextSlot();
             }
         });
     }
