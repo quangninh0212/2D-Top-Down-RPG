@@ -12,9 +12,8 @@ public class EnemyAI : MonoBehaviour
 
     private bool canAttack = true;
 
-    private enum State
-    {
-        Roaming,
+    private enum State {
+        Roaming, 
         Attacking
     }
 
@@ -24,73 +23,61 @@ public class EnemyAI : MonoBehaviour
     private State state;
     private EnemyPathfinding enemyPathfinding;
 
-    private void Awake()
-    {
+    private void Awake() {
         enemyPathfinding = GetComponent<EnemyPathfinding>();
         state = State.Roaming;
     }
 
-    private void Start()
-    {
+    private void Start() {
         roamPosition = GetRoamingPosition();
     }
 
-    private void Update()
-    {
+    private void Update() {
         MovementStateControl();
     }
 
-    private void MovementStateControl()
-    {
+    private void MovementStateControl() {
         switch (state)
         {
             default:
             case State.Roaming:
                 Roaming();
-                break;
+            break;
 
             case State.Attacking:
                 Attacking();
-                break;
+            break;
         }
     }
 
-    private void Roaming()
-    {
+    private void Roaming() {
         timeRoaming += Time.deltaTime;
 
         enemyPathfinding.MoveTo(roamPosition);
 
-        if (Vector2.Distance(transform.position, PlayerController.Instance.transform.position) < attackRange)
-        {
+        if (Vector2.Distance(transform.position, PlayerController.Instance.transform.position) < attackRange) {
             state = State.Attacking;
         }
 
-        if (timeRoaming > roamChangeDirFloat)
-        {
+        if (timeRoaming > roamChangeDirFloat) {
             roamPosition = GetRoamingPosition();
         }
     }
 
-    private void Attacking()
-    {
+    private void Attacking() {
         if (Vector2.Distance(transform.position, PlayerController.Instance.transform.position) > attackRange)
         {
             state = State.Roaming;
         }
 
-        if (attackRange != 0 && canAttack)
-        {
+        if (attackRange != 0 && canAttack) {
 
             canAttack = false;
             (enemyType as IEnemy).Attack();
 
-            if (stopMovingWhileAttacking)
-            {
+            if (stopMovingWhileAttacking) {
                 enemyPathfinding.StopMoving();
-            }
-            else
-            {
+            } else {
                 enemyPathfinding.MoveTo(roamPosition);
             }
 
@@ -98,14 +85,12 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private IEnumerator AttackCooldownRoutine()
-    {
+    private IEnumerator AttackCooldownRoutine() {
         yield return new WaitForSeconds(attackCooldown);
         canAttack = true;
     }
 
-    private Vector2 GetRoamingPosition()
-    {
+    private Vector2 GetRoamingPosition() {
         timeRoaming = 0f;
         return new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)).normalized;
     }
