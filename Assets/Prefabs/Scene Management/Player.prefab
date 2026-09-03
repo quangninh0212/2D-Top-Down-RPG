@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 5568493002343741745}
   - component: {fileID: 2312300902438962853}
   - component: {fileID: 4349563143849140862}
+  - component: {fileID: 1465339509136505281}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -41,7 +42,7 @@ Transform:
   - {fileID: 1148050555838464539}
   - {fileID: 1457158650968079605}
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3651060595845459801
 SpriteRenderer:
@@ -248,6 +249,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knockBackTime: 0.2
+--- !u!114 &1465339509136505281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1621817508055570460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 402cae854bca0c341b0373d1bca0d424, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fullStaminaImage: {fileID: 0}
+  emptyStaminaImage: {fileID: 0}
+  timeBetweenStaminaRefresh: 3
 --- !u!1 &2610579921213329204
 GameObject:
   m_ObjectHideFlags: 0

@@ -17231,6 +17231,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1465339509136505281, guid: 79fbc70fe8546fe41b7a2483f4dddb43, type: 3}
+      propertyPath: fullStaminaImage
+      value: 
+      objectReference: {fileID: 21300000, guid: 7fe1b7a96ea4a904894f372002cbfb64, type: 3}
+    - target: {fileID: 1465339509136505281, guid: 79fbc70fe8546fe41b7a2483f4dddb43, type: 3}
+      propertyPath: emptyStaminaImage
+      value: 
+      objectReference: {fileID: 21300000, guid: 4441b9285bbc3d94892b2454dafc1359, type: 3}
     - target: {fileID: 1621817508055570460, guid: 79fbc70fe8546fe41b7a2483f4dddb43, type: 3}
       propertyPath: m_Name
       value: Player
