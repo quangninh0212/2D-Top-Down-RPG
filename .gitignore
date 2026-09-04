@@ -37,3 +37,8 @@ sysinfo.txt
 # Unity temporary
 *.tmp
 *.bak
+
+# Android build output
+*.apk
+*.aab
+*_BurstDebugInformation_DoNotShip/
