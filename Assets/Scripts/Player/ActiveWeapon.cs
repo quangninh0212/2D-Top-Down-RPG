@@ -1,7 +1,8 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// The pivot the equipped weapon hangs from, and the attack loop. Holding the
+// attack button (mouse or on-screen) keeps swinging on the weapon's cooldown.
 public class ActiveWeapon : Singleton<ActiveWeapon>
 {
     public MonoBehaviour CurrentActiveWeapon { get; private set; }
@@ -10,6 +11,7 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
     private float timeBetweenAttacks;
 
     private bool attackButtonDown, isAttacking = false;
+    private bool disabled;
 
     protected override void Awake()
     {
@@ -20,15 +22,30 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
 
     private void OnEnable()
     {
-        playerControls.Enable();
+        playerControls?.Enable();
+    }
+
+    private void OnDisable()
+    {
+        playerControls?.Disable();
     }
 
     private void Start()
     {
-        playerControls.Combat.Attack.started += _ => StartAttacking();
-        playerControls.Combat.Attack.canceled += _ => StopAttacking();
+        playerControls.Combat.Attack.started += OnAttackStarted;
+        playerControls.Combat.Attack.canceled += OnAttackCanceled;
 
         AttackCooldown();
+    }
+
+    private void OnDestroy()
+    {
+        if (playerControls != null)
+        {
+            playerControls.Combat.Attack.started -= OnAttackStarted;
+            playerControls.Combat.Attack.canceled -= OnAttackCanceled;
+            playerControls.Dispose();
+        }
     }
 
     private void Update()
@@ -41,12 +58,31 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         CurrentActiveWeapon = newWeapon;
 
         AttackCooldown();
-        timeBetweenAttacks = (CurrentActiveWeapon as IWeapon).GetWeaponInfo().weaponCooldown;
+
+        IWeapon weapon = CurrentActiveWeapon as IWeapon;
+        if (weapon != null && weapon.GetWeaponInfo() != null)
+        {
+            timeBetweenAttacks = weapon.GetWeaponInfo().weaponCooldown;
+        }
     }
 
     public void WeaponNull()
     {
         CurrentActiveWeapon = null;
+    }
+
+    // Death removes the weapon but must leave this singleton alive, or the next
+    // scene finds no pivot to hang a weapon from.
+    public void DisableForDeath()
+    {
+        disabled = true;
+        attackButtonDown = false;
+
+        if (CurrentActiveWeapon != null)
+        {
+            Destroy(CurrentActiveWeapon.gameObject);
+            CurrentActiveWeapon = null;
+        }
     }
 
     private void AttackCooldown()
@@ -62,6 +98,9 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         isAttacking = false;
     }
 
+    private void OnAttackStarted(UnityEngine.InputSystem.InputAction.CallbackContext context) => StartAttacking();
+    private void OnAttackCanceled(UnityEngine.InputSystem.InputAction.CallbackContext context) => StopAttacking();
+
     private void StartAttacking()
     {
         attackButtonDown = true;
@@ -72,16 +111,21 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         attackButtonDown = false;
     }
 
-    // Called from the on-screen aim joystick / attack button on touch devices.
+    // Called from the on-screen attack button / aim zone on touch devices.
     public void StartAttackingTouch() => StartAttacking();
     public void StopAttackingTouch() => StopAttacking();
 
     private void Attack()
     {
-        if (attackButtonDown && !isAttacking && CurrentActiveWeapon)
-        {
-            AttackCooldown();
-            (CurrentActiveWeapon as IWeapon).Attack();
-        }
+        if (disabled) { return; }
+        if (PlayerHealth.Instance != null && PlayerHealth.Instance.isDead) { return; }
+        if (PauseMenuUI.IsPaused) { return; }
+
+        bool held = attackButtonDown || MobileInput.AttackHeld;
+
+        if (!held || isAttacking || CurrentActiveWeapon == null) { return; }
+
+        AttackCooldown();
+        (CurrentActiveWeapon as IWeapon)?.Attack();
     }
 }

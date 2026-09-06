@@ -36,10 +36,32 @@ public class MenuBackground : MonoBehaviour
     private float glowPulse;
     private Vector2 laidOutFor;
 
+    // The canvas can still report a zero-sized rect on the frame the menu is
+    // built, before CanvasScaler has run. Dividing by that width produced
+    // Infinity sizes, and a UI element of infinite size makes Unity's batching
+    // pass try to build an unbounded sort grid - which crashes the app with an
+    // out-of-memory error a few seconds in. Falling back to the reference
+    // resolution keeps every number finite; Relayout fixes up the real size as
+    // soon as the canvas reports one.
+    private static readonly Vector2 FallbackSize = new Vector2(1920f, 1080f);
+
+    private Rect SafeBounds()
+    {
+        Rect bounds = area != null ? area.rect : new Rect(0f, 0f, FallbackSize.x, FallbackSize.y);
+
+        bool usable = bounds.width > 1f && bounds.height > 1f
+                      && !float.IsNaN(bounds.width) && !float.IsNaN(bounds.height)
+                      && !float.IsInfinity(bounds.width) && !float.IsInfinity(bounds.height);
+
+        if (usable) { return bounds; }
+
+        return new Rect(-FallbackSize.x * 0.5f, -FallbackSize.y * 0.5f, FallbackSize.x, FallbackSize.y);
+    }
+
     public void Build(RectTransform parent)
     {
         area = parent;
-        Rect bounds = area.rect;
+        Rect bounds = SafeBounds();
 
         AddBackdrop();
         AddGateway(bounds);
@@ -202,7 +224,7 @@ public class MenuBackground : MonoBehaviour
     {
         if (area == null) { return; }
 
-        Rect bounds = area.rect;
+        Rect bounds = SafeBounds();
         if ((bounds.size - laidOutFor).sqrMagnitude > 1f) { Relayout(bounds); }
 
         float delta = Time.unscaledDeltaTime;
@@ -231,7 +253,7 @@ public class MenuBackground : MonoBehaviour
 
     private void DriftEmbers(float delta)
     {
-        Rect bounds = area.rect;
+        Rect bounds = SafeBounds();
         float edgeX = bounds.width * 0.5f + 50f;
         float edgeY = bounds.height * 0.5f + 50f;
 

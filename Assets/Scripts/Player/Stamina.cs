@@ -1,19 +1,28 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class Stamina : Singleton<Stamina>
 {
+    public static event Action<int, int> OnStaminaChanged;
+
     public int CurrentStamina { get; private set; }
 
     [SerializeField] private Sprite fullStaminaImage, emptyStaminaImage;
     [SerializeField] private int timeBetweenStaminaRefresh = 3;
 
+    private const string StaminaContainerName = "Stamina Container";
+
     private Transform staminaContainer;
     private int startingStamina = 3;
     private int maxStamina;
-    const string STAMINA_CONTAINER_TEXT = "Stamina Container";
+    private Coroutine refreshRoutine;
+
+    public int MaxStamina
+    {
+        get { return maxStamina; }
+    }
 
     protected override void Awake()
     {
@@ -25,11 +34,16 @@ public class Stamina : Singleton<Stamina>
 
     private void Start()
     {
-        staminaContainer = GameObject.Find(STAMINA_CONTAINER_TEXT).transform;
+        // The container belongs to the scene's UI canvas, which is rebuilt on
+        // every load, so it is looked up again here rather than cached forever.
+        staminaContainer = null;
+        UpdateStaminaImages();
     }
 
     public void UseStamina()
     {
+        if (CurrentStamina <= 0) { return; }
+
         CurrentStamina--;
         UpdateStaminaImages();
     }
@@ -39,37 +53,63 @@ public class Stamina : Singleton<Stamina>
         if (CurrentStamina < maxStamina)
         {
             CurrentStamina++;
+            AudioManager.PlaySfx(GameSfx.StaminaPickup);
         }
+
+        UpdateStaminaImages();
+    }
+
+    public void ApplyLoadedStamina(int current, int max)
+    {
+        maxStamina = Mathf.Max(1, max);
+        CurrentStamina = Mathf.Clamp(current, 0, maxStamina);
         UpdateStaminaImages();
     }
 
     private IEnumerator RefreshStaminaRoutine()
     {
-        while (true)
+        while (CurrentStamina < maxStamina)
         {
             yield return new WaitForSeconds(timeBetweenStaminaRefresh);
-            RefreshStamina();
+            RefreshStaminaSilently();
         }
+
+        refreshRoutine = null;
+    }
+
+    // The pickup version plays a sound; the passive regeneration should not.
+    private void RefreshStaminaSilently()
+    {
+        if (CurrentStamina < maxStamina) { CurrentStamina++; }
+        UpdateStaminaImages();
     }
 
     private void UpdateStaminaImages()
     {
-        for (int i = 0; i < maxStamina; i++)
+        OnStaminaChanged?.Invoke(CurrentStamina, maxStamina);
+
+        if (staminaContainer == null)
         {
-            if (i <= CurrentStamina - 1)
+            GameObject containerGO = GameObject.Find(StaminaContainerName);
+            if (containerGO != null) { staminaContainer = containerGO.transform; }
+        }
+
+        if (staminaContainer != null)
+        {
+            for (int i = 0; i < maxStamina && i < staminaContainer.childCount; i++)
             {
-                staminaContainer.GetChild(i).GetComponent<Image>().sprite = fullStaminaImage;
-            }
-            else
-            {
-                staminaContainer.GetChild(i).GetComponent<Image>().sprite = emptyStaminaImage;
+                Image image = staminaContainer.GetChild(i).GetComponent<Image>();
+                if (image == null) { continue; }
+
+                image.sprite = i <= CurrentStamina - 1 ? fullStaminaImage : emptyStaminaImage;
             }
         }
 
-        if (CurrentStamina < maxStamina)
+        // Only one regeneration loop at a time; StopAllCoroutines would also
+        // kill unrelated routines on this object.
+        if (CurrentStamina < maxStamina && refreshRoutine == null && isActiveAndEnabled)
         {
-            StopAllCoroutines();
-            StartCoroutine(RefreshStaminaRoutine());
+            refreshRoutine = StartCoroutine(RefreshStaminaRoutine());
         }
     }
 }

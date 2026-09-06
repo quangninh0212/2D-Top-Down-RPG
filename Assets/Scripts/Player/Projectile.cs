@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
@@ -34,24 +32,28 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (other.isTrigger) { return; }
+
         EnemyHealth enemyHealth = other.gameObject.GetComponent<EnemyHealth>();
         Indestructible indestructible = other.gameObject.GetComponent<Indestructible>();
         PlayerHealth player = other.gameObject.GetComponent<PlayerHealth>();
 
-        if (!other.isTrigger && (enemyHealth || indestructible || player))
-        {
-            if ((player && isEnemyProjectile) || (enemyHealth && !isEnemyProjectile))
-            {
-                player?.TakeDamage(1, transform);
-                Instantiate(particleOnHitPrefabVFX, transform.position, transform.rotation);
-                Destroy(gameObject);
-            }
-            else if (!other.isTrigger && indestructible)
-            {
-                Instantiate(particleOnHitPrefabVFX, transform.position, transform.rotation);
-                Destroy(gameObject);
-            }
-        }
+        bool hitsPlayer = player != null && isEnemyProjectile;
+        bool hitsEnemy = enemyHealth != null && !isEnemyProjectile;
+
+        if (!hitsPlayer && !hitsEnemy && indestructible == null) { return; }
+
+        if (hitsPlayer) { player.TakeDamage(1, transform); }
+
+        SpawnHitEffect();
+        Destroy(gameObject);
+    }
+
+    private void SpawnHitEffect()
+    {
+        if (particleOnHitPrefabVFX == null) { return; }
+
+        Instantiate(particleOnHitPrefabVFX, transform.position, transform.rotation);
     }
 
     private void DetectFireDistance()
@@ -64,6 +66,6 @@ public class Projectile : MonoBehaviour
 
     private void MoveProjectile()
     {
-        transform.Translate(Vector3.right * Time.deltaTime * moveSpeed);
+        transform.Translate(Vector3.right * (Time.deltaTime * moveSpeed));
     }
 }

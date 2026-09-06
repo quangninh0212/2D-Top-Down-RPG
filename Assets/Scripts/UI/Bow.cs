@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Bow : MonoBehaviour, IWeapon
@@ -8,7 +6,7 @@ public class Bow : MonoBehaviour, IWeapon
     [SerializeField] private GameObject arrowPrefab;
     [SerializeField] private Transform arrowSpawnPoint;
 
-    readonly int FIRE_HASH = Animator.StringToHash("Fire");
+    private static readonly int FireHash = Animator.StringToHash("Fire");
 
     private Animator myAnimator;
 
@@ -19,9 +17,21 @@ public class Bow : MonoBehaviour, IWeapon
 
     public void Attack()
     {
-        myAnimator.SetTrigger(FIRE_HASH);
+        if (myAnimator != null) { myAnimator.SetTrigger(FireHash); }
+
+        AudioManager.PlaySfx(GameSfx.BowShot);
+
+        if (arrowPrefab == null || arrowSpawnPoint == null || ActiveWeapon.Instance == null) { return; }
+
+        // The pivot is already aimed by MouseFollow, so the arrow inherits the
+        // aim direction - auto-target on a phone, mouse on a desktop.
         GameObject newArrow = Instantiate(arrowPrefab, arrowSpawnPoint.position, ActiveWeapon.Instance.transform.rotation);
-        newArrow.GetComponent<Projectile>().UpdateProjectileRange(weaponInfo.weaponRange);
+
+        Projectile projectile = newArrow.GetComponent<Projectile>();
+        if (projectile != null && weaponInfo != null)
+        {
+            projectile.UpdateProjectileRange(weaponInfo.weaponRange);
+        }
     }
 
     public WeaponInfo GetWeaponInfo()

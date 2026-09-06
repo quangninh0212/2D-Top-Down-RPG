@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Sword : MonoBehaviour, IWeapon
@@ -21,13 +19,21 @@ public class Sword : MonoBehaviour, IWeapon
 
     private void Start()
     {
-        weaponCollider = PlayerController.Instance.GetWeaponCollider();
-        slashAnimSpawnPoint = GameObject.Find("SlashSpawnPoint").transform;
+        if (PlayerController.Instance != null)
+        {
+            weaponCollider = PlayerController.Instance.GetWeaponCollider();
+        }
+
+        if (slashAnimSpawnPoint == null)
+        {
+            GameObject spawnPoint = GameObject.Find("SlashSpawnPoint");
+            if (spawnPoint != null) { slashAnimSpawnPoint = spawnPoint.transform; }
+        }
     }
 
     private void Update()
     {
-        MouseFollowWithOffset();
+        AimWeapon();
     }
 
     public WeaponInfo GetWeaponInfo()
@@ -37,65 +43,59 @@ public class Sword : MonoBehaviour, IWeapon
 
     public void Attack()
     {
-        myAnimator.SetTrigger("Attack");
-        weaponCollider.gameObject.SetActive(true);
+        if (myAnimator != null) { myAnimator.SetTrigger("Attack"); }
+        if (weaponCollider != null) { weaponCollider.gameObject.SetActive(true); }
+
+        AudioManager.PlaySfx(GameSfx.SwordSwing);
+
+        if (slashAnimPrefab == null || slashAnimSpawnPoint == null) { return; }
+
         slashAnim = Instantiate(slashAnimPrefab, slashAnimSpawnPoint.position, Quaternion.identity);
-        slashAnim.transform.parent = this.transform.parent;
+        slashAnim.transform.parent = transform.parent;
     }
 
     public void DoneAttackingAnimEvent()
     {
-        weaponCollider.gameObject.SetActive(false);
+        if (weaponCollider != null) { weaponCollider.gameObject.SetActive(false); }
     }
-
 
     public void SwingUpFlipAnimEvent()
     {
-        slashAnim.gameObject.transform.rotation = Quaternion.Euler(-180, 0, 0);
+        if (slashAnim == null) { return; }
 
-        if (PlayerController.Instance.FacingLeft)
-        {
-            slashAnim.GetComponent<SpriteRenderer>().flipX = true;
-        }
+        slashAnim.transform.rotation = Quaternion.Euler(-180, 0, 0);
+        FlipSlashIfFacingLeft();
     }
 
     public void SwingDownFlipAnimEvent()
     {
-        slashAnim.gameObject.transform.rotation = Quaternion.Euler(0, 0, 0);
+        if (slashAnim == null) { return; }
 
-        if (PlayerController.Instance.FacingLeft)
-        {
-            slashAnim.GetComponent<SpriteRenderer>().flipX = true;
-        }
+        slashAnim.transform.rotation = Quaternion.Euler(0, 0, 0);
+        FlipSlashIfFacingLeft();
     }
 
-    private void MouseFollowWithOffset()
+    private void FlipSlashIfFacingLeft()
     {
-        bool pointingLeft;
-        float angle;
+        if (PlayerController.Instance == null || !PlayerController.Instance.FacingLeft) { return; }
 
-        if (MobileInput.TryGetAimDirection(out Vector2 aimDirection))
-        {
-            pointingLeft = aimDirection.x < 0;
-            angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-        }
-        else
-        {
-            Vector3 mousePos = Input.mousePosition;
-            Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(PlayerController.Instance.transform.position);
-            pointingLeft = mousePos.x < playerScreenPoint.x;
-            angle = Mathf.Atan2(mousePos.y, mousePos.x) * Mathf.Rad2Deg;
-        }
+        SpriteRenderer renderer = slashAnim.GetComponent<SpriteRenderer>();
+        if (renderer != null) { renderer.flipX = true; }
+    }
 
-        if (pointingLeft)
-        {
-            ActiveWeapon.Instance.transform.rotation = Quaternion.Euler(0, -180, angle);
-            weaponCollider.transform.rotation = Quaternion.Euler(0, -180, 0);
-        }
-        else
-        {
-            ActiveWeapon.Instance.transform.rotation = Quaternion.Euler(0, 0, angle);
-            weaponCollider.transform.rotation = Quaternion.Euler(0, 0, 0);
-        }
+    // The pivot itself is aimed by MouseFollow; the sword only has to keep its
+    // damage collider on the correct side of the player.
+    private void AimWeapon()
+    {
+        if (weaponCollider == null) { return; }
+
+        PlayerAimController aim = PlayerAimController.Instance;
+        if (aim == null) { return; }
+
+        bool pointingLeft = aim.GetMeleeDirection().x < 0f;
+
+        weaponCollider.rotation = pointingLeft
+            ? Quaternion.Euler(0, -180, 0)
+            : Quaternion.Euler(0, 0, 0);
     }
 }

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Staff : MonoBehaviour, IWeapon
@@ -10,60 +8,41 @@ public class Staff : MonoBehaviour, IWeapon
 
     private Animator myAnimator;
 
-    readonly int ATTACK_HASH = Animator.StringToHash("Attack");
+    private static readonly int AttackHash = Animator.StringToHash("Attack");
+
+    // The direction the shot was aimed at when the animation started, so a
+    // target moving during the wind-up does not drag the laser around.
+    private Vector2 queuedAim = Vector2.right;
 
     private void Awake()
     {
         myAnimator = GetComponent<Animator>();
     }
 
-    private void Update()
-    {
-        MouseFollowWithOffset();
-    }
-
-
     public void Attack()
     {
-        myAnimator.SetTrigger(ATTACK_HASH);
+        queuedAim = PlayerAimController.CurrentAim;
+
+        if (myAnimator != null) { myAnimator.SetTrigger(AttackHash); }
+
+        AudioManager.PlaySfx(GameSfx.StaffShot);
     }
 
     public void SpawnStaffProjectileAnimEvent()
     {
+        if (magicLaser == null || magicLaserSpawnPoint == null) { return; }
+
         GameObject newLaser = Instantiate(magicLaser, magicLaserSpawnPoint.position, Quaternion.identity);
-        newLaser.GetComponent<MagicLaser>().UpdateLaserRange(weaponInfo.weaponRange);
+
+        MagicLaser laser = newLaser.GetComponent<MagicLaser>();
+        if (laser == null) { return; }
+
+        laser.SetDirection(queuedAim);
+        laser.UpdateLaserRange(weaponInfo != null ? weaponInfo.weaponRange : 8f);
     }
 
     public WeaponInfo GetWeaponInfo()
     {
         return weaponInfo;
-    }
-
-    private void MouseFollowWithOffset()
-    {
-        bool pointingLeft;
-        float angle;
-
-        if (MobileInput.TryGetAimDirection(out Vector2 aimDirection))
-        {
-            pointingLeft = aimDirection.x < 0;
-            angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
-        }
-        else
-        {
-            Vector3 mousePos = Input.mousePosition;
-            Vector3 playerScreenPoint = Camera.main.WorldToScreenPoint(PlayerController.Instance.transform.position);
-            pointingLeft = mousePos.x < playerScreenPoint.x;
-            angle = Mathf.Atan2(mousePos.y, mousePos.x) * Mathf.Rad2Deg;
-        }
-
-        if (pointingLeft)
-        {
-            ActiveWeapon.Instance.transform.rotation = Quaternion.Euler(0, -180, angle);
-        }
-        else
-        {
-            ActiveWeapon.Instance.transform.rotation = Quaternion.Euler(0, 0, angle);
-        }
     }
 }

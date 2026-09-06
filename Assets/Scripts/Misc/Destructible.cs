@@ -1,18 +1,48 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
+// Bushes, crates and barrels. Breaking one is remembered for the rest of the
+// run, so walking back into a cleared area does not repopulate it with loot.
 public class Destructible : MonoBehaviour
 {
+    public static event Action<Destructible> OnDestructibleDestroyed;
+
     [SerializeField] private GameObject destroyVFX;
+
+    private PersistentObjectId persistentId;
+    private bool broken;
+
+    public string PersistentId
+    {
+        get { return persistentId != null ? persistentId.Id : null; }
+    }
+
+    private void Awake()
+    {
+        persistentId = GetComponent<PersistentObjectId>();
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.GetComponent<DamageSource>() || other.gameObject.GetComponent<Projectile>())
+        if (broken) { return; }
+
+        bool hitByWeapon = other.gameObject.GetComponent<DamageSource>() != null
+                           || other.gameObject.GetComponent<Projectile>() != null;
+
+        if (!hitByWeapon) { return; }
+
+        broken = true;
+
+        PickUpSpawner spawner = GetComponent<PickUpSpawner>();
+        if (spawner != null) { spawner.DropItems(); }
+
+        if (destroyVFX != null)
         {
-            GetComponent<PickUpSpawner>().DropItems();
             Instantiate(destroyVFX, transform.position, Quaternion.identity);
-            Destroy(gameObject);
         }
+
+        OnDestructibleDestroyed?.Invoke(this);
+
+        Destroy(gameObject);
     }
 }

@@ -1,85 +1,179 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
+// Owns which weapons the player has and which one is in their hand. The old
+// five-slot UI in UICanvas.prefab is no longer the source of truth: the three
+// WeaponInfo assets are referenced directly, so nothing depends on child order.
 public class ActiveInventory : Singleton<ActiveInventory>
 {
-    private int activeSlotIndexNum = 0;
+    public static event Action<WeaponType> OnWeaponChanged;
+
+    [Header("Weapons, in WeaponType order")]
+    [SerializeField] private WeaponInfo swordInfo;
+    [SerializeField] private WeaponInfo bowInfo;
+    [SerializeField] private WeaponInfo staffInfo;
 
     private PlayerControls playerControls;
+    private WeaponType currentWeapon = WeaponType.Sword;
+
+    public WeaponType CurrentWeapon
+    {
+        get { return currentWeapon; }
+    }
 
     protected override void Awake()
     {
         base.Awake();
 
         playerControls = new PlayerControls();
+
+        // The legacy slot strip is kept in the prefab for its artwork, but it no
+        // longer drives anything, so it is faded out rather than deleted.
+        HideLegacySlots();
     }
 
     private void Start()
     {
-        playerControls.Inventory.Keyboard.performed += ctx => ToggleActiveSlot((int)ctx.ReadValue<float>());
+        playerControls.Inventory.Keyboard.performed += OnNumberKey;
     }
 
     private void OnEnable()
     {
-        playerControls.Enable();
+        playerControls?.Enable();
     }
+
+    private void OnDisable()
+    {
+        playerControls?.Disable();
+    }
+
+    private void OnDestroy()
+    {
+        if (playerControls != null)
+        {
+            playerControls.Inventory.Keyboard.performed -= OnNumberKey;
+            playerControls.Dispose();
+        }
+    }
+
+    // ----- ownership ------------------------------------------------------
+
+    public bool IsOwned(WeaponType weapon)
+    {
+        if (weapon == WeaponType.Sword) { return true; }
+
+        GameSaveManager save = GameSaveManager.Instance;
+        return save != null && save.Data.OwnsWeapon(weapon);
+    }
+
+    public WeaponInfo GetWeaponInfo(WeaponType weapon)
+    {
+        switch (weapon)
+        {
+            case WeaponType.Bow: return bowInfo;
+            case WeaponType.Staff: return staffInfo;
+            default: return swordInfo;
+        }
+    }
+
+    // ----- equipping ------------------------------------------------------
 
     public void EquipStartingWeapon()
     {
-        ToggleActiveHighlight(0);
+        WeaponType wanted = currentWeapon;
+
+        GameSaveManager save = GameSaveManager.Instance;
+        if (save != null) { wanted = (WeaponType)save.Data.currentWeapon; }
+
+        if (!IsOwned(wanted)) { wanted = WeaponType.Sword; }
+
+        EquipWeapon(wanted, false);
     }
 
-    private void ToggleActiveSlot(int numValue)
+    public void ApplyLoadedWeapon(WeaponType weapon)
     {
-        ToggleActiveHighlight(numValue - 1);
+        EquipWeapon(IsOwned(weapon) ? weapon : WeaponType.Sword, false);
     }
 
-    // Called from InventorySlot when tapped on touch devices.
-    public void SelectSlot(int indexNum)
+    // Steps to the next weapon the player actually owns. Locked weapons are
+    // skipped rather than equipping an empty hand.
+    public void CycleWeapon()
     {
-        ToggleActiveHighlight(indexNum);
-    }
-
-    private void ToggleActiveHighlight(int indexNum)
-    {
-        activeSlotIndexNum = indexNum;
-
-        foreach (Transform inventorySlot in this.transform)
+        for (int step = 1; step <= WeaponTypeInfo.Count; step++)
         {
-            inventorySlot.GetChild(0).gameObject.SetActive(false);
+            WeaponType candidate = (WeaponType)(((int)currentWeapon + step) % WeaponTypeInfo.Count);
+
+            if (IsOwned(candidate))
+            {
+                EquipWeapon(candidate, true);
+                return;
+            }
         }
-
-        this.transform.GetChild(indexNum).GetChild(0).gameObject.SetActive(true);
-
-        ChangeActiveWeapon();
     }
 
-    private void ChangeActiveWeapon()
+    public void EquipWeapon(WeaponType weapon, bool playSound)
     {
-
-        if (ActiveWeapon.Instance.CurrentActiveWeapon != null)
+        if (!IsOwned(weapon))
         {
-            Destroy(ActiveWeapon.Instance.CurrentActiveWeapon.gameObject);
-        }
-
-        Transform childTransform = transform.GetChild(activeSlotIndexNum);
-        InventorySlot inventorySlot = childTransform.GetComponentInChildren<InventorySlot>();
-        WeaponInfo weaponInfo = inventorySlot.GetWeaponInfo();
-        GameObject weaponToSpawn = weaponInfo.weaponPrefab;
-
-        if (weaponInfo == null)
-        {
-            ActiveWeapon.Instance.WeaponNull();
+            GameMessages.Toast(WeaponTypeInfo.DisplayName(weapon) + " CHƯA ĐƯỢC MỞ KHÓA");
             return;
         }
 
+        WeaponInfo info = GetWeaponInfo(weapon);
+        if (info == null || info.weaponPrefab == null)
+        {
+            Debug.LogWarning("[ActiveInventory] No weapon prefab assigned for " + weapon);
+            return;
+        }
 
-        GameObject newWeapon = Instantiate(weaponToSpawn, ActiveWeapon.Instance.transform);
+        currentWeapon = weapon;
 
-        //ActiveWeapon.Instance.transform.rotation = Quaternion.Euler(0, 0, 0);
-        //newWeapon.transform.parent = ActiveWeapon.Instance.transform;
+        ActiveWeapon activeWeapon = ActiveWeapon.Instance;
+        if (activeWeapon == null) { return; }
 
-        ActiveWeapon.Instance.NewWeapon(newWeapon.GetComponent<MonoBehaviour>());
+        if (activeWeapon.CurrentActiveWeapon != null)
+        {
+            Destroy(activeWeapon.CurrentActiveWeapon.gameObject);
+        }
+
+        GameObject spawned = Instantiate(info.weaponPrefab, activeWeapon.transform);
+        activeWeapon.NewWeapon(spawned.GetComponent<MonoBehaviour>());
+
+        GameSaveManager save = GameSaveManager.Instance;
+        if (save != null) { save.Data.currentWeapon = (int)weapon; }
+
+        if (playSound) { AudioManager.PlaySfx(GameSfx.UiClick); }
+
+        OnWeaponChanged?.Invoke(weapon);
+    }
+
+    // Called from the on-screen weapon button.
+    public void TouchCycleWeapon() => CycleWeapon();
+
+    // Kept so the InventorySlot components in the old prefab still compile.
+    public void SelectSlot(int indexNum)
+    {
+        if (indexNum < 0 || indexNum >= WeaponTypeInfo.Count) { return; }
+
+        EquipWeapon((WeaponType)indexNum, true);
+    }
+
+    private void OnNumberKey(UnityEngine.InputSystem.InputAction.CallbackContext context)
+    {
+        int pressed = Mathf.RoundToInt(context.ReadValue<float>()) - 1;
+        SelectSlot(pressed);
+    }
+
+    private void HideLegacySlots()
+    {
+        // Disabling the object outright would stop this component's own Start
+        // from running, so the strip is made invisible and non-interactive
+        // instead.
+        CanvasGroup group = GetComponent<CanvasGroup>();
+        if (group == null) { group = gameObject.AddComponent<CanvasGroup>(); }
+
+        group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
     }
 }

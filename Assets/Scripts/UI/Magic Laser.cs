@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class MagicLaser : MonoBehaviour
@@ -7,6 +6,7 @@ public class MagicLaser : MonoBehaviour
     [SerializeField] private float laserGrowTime = 2f;
 
     private bool isGrowing = true;
+    private bool directionSet;
     private float laserRange;
     private SpriteRenderer spriteRenderer;
     private CapsuleCollider2D capsuleCollider2D;
@@ -19,7 +19,19 @@ public class MagicLaser : MonoBehaviour
 
     private void Start()
     {
-        LaserFaceMouse();
+        // Staff normally sets the direction explicitly; this covers a laser
+        // spawned by anything that does not.
+        if (!directionSet) { SetDirection(PlayerAimController.CurrentAim); }
+    }
+
+    // Aimed once at spawn: a growing beam that re-aimed every frame would sweep
+    // across the screen and hit everything.
+    public void SetDirection(Vector2 direction)
+    {
+        if (direction.sqrMagnitude < 0.0001f) { direction = Vector2.right; }
+
+        transform.right = direction.normalized;
+        directionSet = true;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -40,35 +52,24 @@ public class MagicLaser : MonoBehaviour
     {
         float timePassed = 0f;
 
-        while (spriteRenderer.size.x < laserRange && isGrowing)
+        while (spriteRenderer != null && spriteRenderer.size.x < laserRange && isGrowing)
         {
             timePassed += Time.deltaTime;
             float linearT = timePassed / laserGrowTime;
+            float length = Mathf.Lerp(1f, laserRange, linearT);
 
-            // sprite 
-            spriteRenderer.size = new Vector2(Mathf.Lerp(1f, laserRange, linearT), 1f);
+            spriteRenderer.size = new Vector2(length, 1f);
 
-            // collider
-            capsuleCollider2D.size = new Vector2(Mathf.Lerp(1f, laserRange, linearT), capsuleCollider2D.size.y);
-            capsuleCollider2D.offset = new Vector2((Mathf.Lerp(1f, laserRange, linearT)) / 2, capsuleCollider2D.offset.y);
+            if (capsuleCollider2D != null)
+            {
+                capsuleCollider2D.size = new Vector2(length, capsuleCollider2D.size.y);
+                capsuleCollider2D.offset = new Vector2(length / 2f, capsuleCollider2D.offset.y);
+            }
 
             yield return null;
         }
 
-        StartCoroutine(GetComponent<SpriteFade>().SlowFadeRoutine());
-    }
-
-    private void LaserFaceMouse()
-    {
-        if (MobileInput.TryGetAimDirection(out Vector2 aimDirection))
-        {
-            transform.right = aimDirection;
-            return;
-        }
-
-        Vector3 mousePosition = Input.mousePosition;
-        mousePosition = Camera.main.ScreenToWorldPoint(mousePosition);
-        Vector2 direction = transform.position - mousePosition;
-        transform.right = -direction;
+        SpriteFade fade = GetComponent<SpriteFade>();
+        if (fade != null) { StartCoroutine(fade.SlowFadeRoutine()); }
     }
 }

@@ -1,0 +1,5 @@
+All audio in this folder was generated procedurally by
+Assets/Editor/PlaceholderAudioGenerator.cs.
+
+Generated specifically for this project. No third-party or copyrighted
+material is used. Re-run Tools > Soulbound Gate > Generate Audio to rebuild.
