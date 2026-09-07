@@ -128,6 +128,16 @@ public class GameplayRuntime : MonoBehaviour
         // level loads.
         if (inGameplay) { HudLayout.Apply(); }
 
+        // The boss bar lives on this persistent object, and the boss only hides
+        // it by dying. Walking back out of the boss room, or quitting to the
+        // menu, used to leave it stuck across the top of every screen until the
+        // app was restarted. Any scene without a boss in it clears the bar; the
+        // boss shows it again from its own Start.
+        if (bossBar != null && FindObjectOfType<BossHealth>() == null)
+        {
+            bossBar.Hide();
+        }
+
         if (!inGameplay)
         {
             if (pauseMenu != null) { pauseMenu.Close(); }

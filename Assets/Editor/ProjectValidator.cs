@@ -16,10 +16,16 @@ public static class ProjectValidator
         public string Scene;
         public int MandatoryEnemies;
 
-        public Expectation(string scene, int enemies)
+        // The boss room is checked on its boss, not on a headcount. Victory
+        // there comes from the Soul Warden dying, so extra enemies placed in it
+        // are a design choice rather than a mistake.
+        public bool BossLevel;
+
+        public Expectation(string scene, int enemies, bool bossLevel = false)
         {
             Scene = scene;
             MandatoryEnemies = enemies;
+            BossLevel = bossLevel;
         }
     }
 
@@ -29,7 +35,7 @@ public static class ProjectValidator
         new Expectation(GameScenes.Scene2, 5),
         new Expectation(GameScenes.Scene3, 7),
         new Expectation(GameScenes.Scene4, 4),
-        new Expectation(GameScenes.Scene5, 1)
+        new Expectation(GameScenes.Scene5, 1, bossLevel: true)
     };
 
     [MenuItem("Tools/Soulbound Gate/Validate Project")]
@@ -304,7 +310,23 @@ public static class ProjectValidator
         report.AppendLine("  player=" + hasPlayer + " managers=" + hasManagers + " canvas=" + hasCanvas +
                           " camera=" + hasCamera + " levelManager=" + hasLevelManager + " anchor=" + hasAnchor);
 
-        if (mandatory != expectation.MandatoryEnemies)
+        if (expectation.BossLevel)
+        {
+            int bosses = 0;
+
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                bosses += root.GetComponentsInChildren<BossHealth>(true).Length;
+            }
+
+            report.AppendLine("  bosses: " + bosses + " (plus " + (mandatory - bosses) + " other enemies)");
+
+            if (bosses != 1)
+            {
+                failures.Add(expectation.Scene + " has " + bosses + " bosses, expected exactly 1");
+            }
+        }
+        else if (mandatory != expectation.MandatoryEnemies)
         {
             failures.Add(expectation.Scene + " has " + mandatory + " mandatory enemies, expected " + expectation.MandatoryEnemies);
         }

@@ -62,6 +62,11 @@ public class BossHealthBarUI : MonoBehaviour
         Hide();
     }
 
+    public bool IsVisible
+    {
+        get { return gameObject.activeSelf && group != null && group.alpha > 0.01f; }
+    }
+
     public void Show(string bossName)
     {
         if (group == null) { return; }

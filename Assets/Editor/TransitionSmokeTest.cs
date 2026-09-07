@@ -20,6 +20,7 @@ public static class TransitionSmokeTest
     private static int step;
     private static int framesInStep;
     private static string awaitingScene;
+    private static bool leftBossRoom;
 
     [MenuItem("Tools/Soulbound Gate/Debug/Transition Smoke Test")]
     public static void Run()
@@ -33,6 +34,7 @@ public static class TransitionSmokeTest
         step = 0;
         framesInStep = 0;
         awaitingScene = null;
+        leftBossRoom = false;
 
         EditorApplication.update += Tick;
         EditorApplication.EnterPlaymode();
@@ -86,6 +88,20 @@ public static class TransitionSmokeTest
 
         if (step >= GameScenes.Levels.Length - 1)
         {
+            // One more hop: walk back out of the boss room with the boss still
+            // alive. That is the case that used to leave its health bar stuck
+            // across the top of every later screen.
+            if (!leftBossRoom)
+            {
+                leftBossRoom = true;
+
+                if (StartTransitionTo(active, GameScenes.Scene4))
+                {
+                    framesInStep = 0;
+                    return;
+                }
+            }
+
             Finish();
             return;
         }
@@ -102,8 +118,11 @@ public static class TransitionSmokeTest
 
     private static bool StartNextTransition(string fromScene)
     {
-        string target = GameScenes.LevelScene(GameScenes.LevelNumberOf(fromScene) + 1);
+        return StartTransitionTo(fromScene, GameScenes.LevelScene(GameScenes.LevelNumberOf(fromScene) + 1));
+    }
 
+    private static bool StartTransitionTo(string fromScene, string target)
+    {
         AreaExit gate = null;
 
         foreach (AreaExit exit in Object.FindObjectsOfType<AreaExit>())
@@ -163,6 +182,8 @@ public static class TransitionSmokeTest
 
         if (blocked) { Failures.Add(sceneName + ": player arrives inside a collider at " + position.ToString("0.0")); }
 
+        CheckBossBar(sceneName);
+
         MapRuntimeReachability(sceneName, position);
 
         VerifyUnstick(sceneName, player, position);
@@ -173,6 +194,30 @@ public static class TransitionSmokeTest
         {
             Failures.Add(sceneName + ": player arrives boxed in at " + position.ToString("0.0") +
                          " with only " + room + " free cells nearby");
+        }
+    }
+
+    // The boss health bar belongs to the persistent overlay, so it has to be
+    // cleared by whoever leaves the boss room. It used to sit across the top of
+    // every later screen until the app was restarted.
+    private static void CheckBossBar(string sceneName)
+    {
+        GameplayRuntime runtime = Object.FindObjectOfType<GameplayRuntime>();
+        BossHealthBarUI bar = runtime != null ? runtime.BossBar : null;
+
+        if (bar == null)
+        {
+            Report.AppendLine("  boss bar: not built");
+            return;
+        }
+
+        bool bossHere = Object.FindObjectOfType<BossHealth>() != null;
+
+        Report.AppendLine("  boss bar visible=" + bar.IsVisible + "  boss in scene=" + bossHere);
+
+        if (bar.IsVisible && !bossHere)
+        {
+            Failures.Add(sceneName + ": the boss health bar is still on screen with no boss in the level");
         }
     }
 
