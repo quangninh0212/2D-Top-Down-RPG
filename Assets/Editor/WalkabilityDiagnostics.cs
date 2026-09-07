@@ -181,9 +181,24 @@ public static class WalkabilityDiagnostics
         return cells;
     }
 
+    // An enemy counts as reachable when the player can get next to it. Testing
+    // only the cell it stands on would condemn every enemy tucked against a
+    // tree - and moving those is how they ended up drifting a step further
+    // across the map on each run of the setup tool.
     public static bool IsCellReachable(HashSet<Vector2Int> cells, Vector2 position)
     {
-        return cells.Contains(new Vector2Int(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y)));
+        int cx = Mathf.RoundToInt(position.x);
+        int cy = Mathf.RoundToInt(position.y);
+
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                if (cells.Contains(new Vector2Int(cx + dx, cy + dy))) { return true; }
+            }
+        }
+
+        return false;
     }
 
     private static bool[,] FloodFill(bool[,] free, Vector2 spawn, int width, int height)

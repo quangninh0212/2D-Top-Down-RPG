@@ -71,9 +71,71 @@ public static class LevelSceneBuilder
 
         PatchScene1();
         PatchScene2();
+
+        // Scene3-5 are generated, but only once. Rebuilding them from an empty
+        // scene throws away every prop placed by hand since - which is exactly
+        // what happened the first time this ran twice. An existing level is
+        // repaired in place instead; only a missing one is generated.
+        EnsureLevel(GameScenes.Scene3, BuildScene3);
+        EnsureLevel(GameScenes.Scene4, BuildScene4);
+        EnsureLevel(GameScenes.Scene5, BuildScene5);
+    }
+
+    // Explicit, and destructive on purpose: this is the only way to get the
+    // generated layout back, and it discards hand-placed decoration.
+    [MenuItem("Tools/Soulbound Gate/Danger/Rebuild Scene3-5 From Scratch")]
+    public static void RebuildGeneratedLevelsFromScratch()
+    {
+        bool confirmed = Application.isBatchMode || EditorUtility.DisplayDialog(
+            "Rebuild Scene3, Scene4 and Scene5?",
+            "These levels will be regenerated from an empty scene. Every prop, tile and " +
+            "enemy position you placed by hand in them will be lost.\n\nThis cannot be undone.",
+            "Rebuild and lose my edits", "Cancel");
+
+        if (!confirmed) { return; }
+
         BuildScene3();
         BuildScene4();
         BuildScene5();
+    }
+
+    private static void EnsureLevel(string sceneName, System.Action build)
+    {
+        string path = ScenesFolder + "/" + sceneName + ".unity";
+
+        if (!File.Exists(path))
+        {
+            build();
+            return;
+        }
+
+        RepairLevel(sceneName, path);
+    }
+
+    // Applies the correctness fixes a level needs - collision rebuilt from its
+    // tiles, unique persistent ids, spawns that are not inside walls - without
+    // touching a single piece of its layout.
+    private static void RepairLevel(string sceneName, string path)
+    {
+        Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+
+        EnsureLevelManager(scene);
+        EnsureCameraAnchor(scene, Vector2.zero);
+        EnsureCanopyIsNotSolid(scene);
+        RefreshTilemapColliders(scene);
+        EnsurePlayAreaBounds(scene, Vector2.zero);
+
+        EnsureDefaultSpawn(scene, new Vector2(-12f, 0f));
+        NudgeBlockedEntrances(scene);
+        NudgeUnreachableEnemies(scene);
+
+        AssignPersistentIds(scene);
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene, path);
+
+        SoulboundSetupLog.Step("Repaired " + sceneName + " in place (" + CountEnemies(scene) +
+                               " mandatory enemies, layout untouched).");
     }
 
     // ----- front end ------------------------------------------------------
@@ -145,9 +207,12 @@ public static class LevelSceneBuilder
 
         Transform enemies = EnsureContainer(scene, "Enemies");
 
-        // Scene2's objective is five Grape; the Ghosts move on to Scene4.
-        ClearChildren(enemies);
-        SpawnEnemies(enemies, GrapePrefab, new[]
+        // Scene2's objective is five Grape; the Ghosts move on to Scene4. Once
+        // the roster is right it is left alone, so re-running the tool does not
+        // undo enemy positions moved by hand.
+        RemoveEnemiesOtherThan(enemies, GrapePrefab);
+
+        TrimEnemies(enemies, GrapePrefab, 5, new[]
         {
             new Vector2(-8f, 2.5f), new Vector2(-3f, -3.5f), new Vector2(2.5f, 3.5f),
             new Vector2(7f, -2f), new Vector2(10f, 3f)
@@ -618,9 +683,11 @@ public static class LevelSceneBuilder
             GameObject go = new GameObject("Fixed Camera Anchor");
             SceneManager.MoveGameObjectToScene(go, scene);
             anchor = go.AddComponent<LevelCameraAnchor>();
-        }
 
-        anchor.transform.position = new Vector3(centre.x, centre.y, 0f);
+            // Only a new anchor is positioned. An existing one may have been
+            // nudged by hand to frame a level better.
+            anchor.transform.position = new Vector3(centre.x, centre.y, 0f);
+        }
 
         SerializedObject serialized = new SerializedObject(anchor);
         serialized.FindProperty("arenaWidth").floatValue = ArenaWidth;
@@ -792,6 +859,21 @@ public static class LevelSceneBuilder
                                composite.pathCount + " outlines, bounds " + composite.bounds.size.ToString("0.0") + ".");
     }
 
+    // TransparentDetection fades the canopy with OnTriggerEnter2D, so the
+    // collider on that layer is there to notice the player, not to stop them.
+    // Left solid it walls off whole parts of a map invisibly.
+    private static void EnsureCanopyIsNotSolid(Scene scene)
+    {
+        Tilemap top = FindTilemapInScene(scene, "Top");
+        if (top == null) { return; }
+
+        TilemapCollider2D collider = top.GetComponent<TilemapCollider2D>();
+        if (collider == null || collider.isTrigger) { return; }
+
+        collider.isTrigger = true;
+        SoulboundSetupLog.Step("Canopy collider in " + scene.name + " set to trigger so it no longer blocks movement.");
+    }
+
     // The 'Top' layer is tree canopy drawn above the player. It was authored for
     // a camera that followed the player closely; with the whole arena on screen
     // at once it covers most of the playfield and hides the fight. This clears
@@ -802,14 +884,7 @@ public static class LevelSceneBuilder
         Tilemap top = FindTilemapInScene(scene, "Top");
         if (top == null) { return; }
 
-        // TransparentDetection fades the canopy using OnTriggerEnter2D, so this
-        // collider is meant to detect the player, not stop them.
-        TilemapCollider2D collider = top.GetComponent<TilemapCollider2D>();
-        if (collider != null && !collider.isTrigger)
-        {
-            collider.isTrigger = true;
-            SoulboundSetupLog.Step("Top canopy collider in " + scene.name + " set to trigger so it no longer blocks movement.");
-        }
+        EnsureCanopyIsNotSolid(scene);
 
         const int keepOutsideX = 12;
         const int keepOutsideY = 6;
@@ -1196,6 +1271,8 @@ public static class LevelSceneBuilder
             matching.RemoveAt(i);
         }
 
+        int existingCount = matching.Count;
+
         while (matching.Count < keep)
         {
             GameObject spawned = InstantiateAt(prefabPath, parent, Vector2.zero);
@@ -1204,7 +1281,9 @@ public static class LevelSceneBuilder
             matching.Add(spawned.transform);
         }
 
-        for (int i = 0; i < matching.Count && i < positions.Length; i++)
+        // Only the ones that had to be created get placed. Moving the enemies
+        // that were already there would undo any repositioning done by hand.
+        for (int i = existingCount; i < matching.Count && i < positions.Length; i++)
         {
             matching[i].position = positions[i];
         }
