@@ -1093,13 +1093,18 @@ public static class LevelSceneBuilder
     // rebuilding a level reproduces exactly the same ids.
     private static void AssignPersistentIds(Scene scene)
     {
+        // Ids have to be unique inside a scene: the save file records "this one
+        // is dead" by id, so two objects sharing one would die together.
+        // Duplicating a GameObject in the editor copies its id, so uniqueness is
+        // enforced here rather than assumed.
+        HashSet<string> used = new HashSet<string>();
         int index = 0;
 
         foreach (GameObject root in scene.GetRootGameObjects())
         {
             foreach (EnemyHealth enemy in root.GetComponentsInChildren<EnemyHealth>(true))
             {
-                AssignId(enemy.gameObject, scene.name + ":enemy:" + index++);
+                AssignId(enemy.gameObject, scene.name + ":enemy:" + index++, used);
             }
         }
 
@@ -1109,19 +1114,30 @@ public static class LevelSceneBuilder
         {
             foreach (Destructible destructible in root.GetComponentsInChildren<Destructible>(true))
             {
-                AssignId(destructible.gameObject, scene.name + ":prop:" + index++);
+                AssignId(destructible.gameObject, scene.name + ":prop:" + index++, used);
             }
         }
     }
 
-    private static void AssignId(GameObject target, string id)
+    private static void AssignId(GameObject target, string fallbackId, HashSet<string> used)
     {
         PersistentObjectId component = target.GetComponent<PersistentObjectId>();
         if (component == null) { component = target.AddComponent<PersistentObjectId>(); }
 
-        // An object that already has an id keeps it: re-running the setup tool
-        // must not renumber objects a player's save file already refers to.
-        if (component.HasId) { return; }
+        // An id that is present and unique is kept, so re-running the setup tool
+        // does not renumber objects a player's save file already refers to.
+        if (component.HasId && used.Add(component.Id)) { return; }
+
+        string id = fallbackId;
+        int suffix = 1;
+
+        while (!used.Add(id)) { id = fallbackId + "-" + suffix++; }
+
+        if (component.HasId)
+        {
+            SoulboundSetupLog.Warn("Duplicate persistent id on '" + target.name + "' in " +
+                                   target.scene.name + "; reassigned to " + id + ".");
+        }
 
         component.AssignId(id);
         EditorUtility.SetDirty(component);

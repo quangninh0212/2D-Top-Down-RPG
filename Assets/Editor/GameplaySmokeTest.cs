@@ -20,6 +20,7 @@ public static class GameplaySmokeTest
 
     private static int frames;
     private static bool transitionStarted;
+    private static float transitionTime;
     private static readonly StringBuilder Report = new StringBuilder();
     private static readonly List<string> Failures = new List<string>();
 
@@ -45,6 +46,12 @@ public static class GameplaySmokeTest
 
         frames++;
 
+        // The editor is not a phone, so GameBootstrap turns auto-targeting off
+        // as play mode starts and these checks would pass without exercising
+        // anything. Forcing it back on afterwards makes the test behave the way
+        // the Android build does.
+        MobileInput.UseAutoTargeting = true;
+
         if (!transitionStarted)
         {
             if (frames < FramesBeforeTransition) { return; }
@@ -53,6 +60,7 @@ public static class GameplaySmokeTest
 
             transitionStarted = true;
             frames = 0;
+            transitionTime = Time.time;
 
             // Straight to Scene2, which is what the player ends up in after the
             // loading screen finishes.
@@ -60,7 +68,10 @@ public static class GameplaySmokeTest
             return;
         }
 
-        if (frames < FramesAfterTransition) { return; }
+        // Frames alone are not enough here: batch mode runs them far faster than
+        // real time, and the aim controller rescans on a 0.15 second interval.
+        // Waiting on the clock as well means the check sees a settled state.
+        if (frames < FramesAfterTransition || Time.time - transitionTime < 0.5f) { return; }
 
         EditorApplication.update -= Tick;
 
@@ -145,6 +156,89 @@ public static class GameplaySmokeTest
         if (!Mathf.Approximately(Time.timeScale, 1f)) { Failures.Add(label + ": time is not running"); }
 
         CheckHudLayout(label);
+        CheckAutoAim(label);
+    }
+
+    // On a phone there is no cursor, so the aim controller is what points every
+    // weapon. It used to be lost on the first scene change - the incoming
+    // scene's own Player claimed the static and then took it down with it when
+    // the duplicate was destroyed, leaving the surviving player aiming at a
+    // fixed direction until the player went back through the main menu.
+    private static void CheckAutoAim(string label)
+    {
+        PlayerAimController aim = PlayerAimController.Instance;
+
+        Report.AppendLine("  PlayerAimController.Instance: " + (aim != null) +
+                          "  autoTargeting=" + MobileInput.UseAutoTargeting);
+
+        if (aim == null)
+        {
+            Failures.Add(label + ": no PlayerAimController - auto-aim would be dead");
+            return;
+        }
+
+        PlayerController player = PlayerController.Instance;
+
+        if (player != null && aim.gameObject != player.gameObject)
+        {
+            Failures.Add(label + ": the aim controller is on a different object than the live player");
+        }
+
+        // Whether it is actually locking on to something it should see.
+        Transform nearest = null;
+        float nearestDistance = float.MaxValue;
+
+        foreach (EnemyHealth enemy in Object.FindObjectsOfType<EnemyHealth>())
+        {
+            if (enemy == null || enemy.IsDead || player == null) { continue; }
+
+            float distance = Vector2.Distance(enemy.transform.position, player.transform.position);
+            if (distance >= nearestDistance) { continue; }
+
+            nearestDistance = distance;
+            nearest = enemy.transform;
+        }
+
+        if (nearest == null)
+        {
+            Report.AppendLine("  no living enemy to aim at");
+            return;
+        }
+
+        string targetDescription = aim.CurrentTarget != null
+            ? "'" + aim.CurrentTarget.name + "' at " + ((Vector2)aim.CurrentTarget.position).ToString("0.0") +
+              " in scene '" + aim.CurrentTarget.gameObject.scene.name + "'"
+            : "none";
+
+        Report.AppendLine("  nearest enemy '" + nearest.name + "' at " + ((Vector2)nearest.position).ToString("0.0") +
+                          ", " + nearestDistance.ToString("0.0") + " away");
+        Report.AppendLine("  locked on to " + targetDescription + ", aim=" + aim.AimDirection.ToString("0.00"));
+
+        // A target from the level we just left would mean the scan never re-ran.
+        if (aim.CurrentTarget != null && aim.CurrentTarget.gameObject.scene.name != label.Split(' ')[0])
+        {
+            Failures.Add(label + ": auto-aim is locked on to an object from scene '" +
+                         aim.CurrentTarget.gameObject.scene.name + "'");
+        }
+
+        // Comfortably inside the controller's 9 unit radius, so a miss here is
+        // a real failure rather than a borderline one.
+        if (nearestDistance > 7f) { return; }
+
+        if (aim.CurrentTarget == null)
+        {
+            Failures.Add(label + ": an enemy is " + nearestDistance.ToString("0.0") +
+                         " away but auto-aim locked on to nothing");
+            return;
+        }
+
+        Vector2 toTarget = ((Vector2)(aim.CurrentTarget.position - player.transform.position)).normalized;
+
+        if (Vector2.Dot(toTarget, aim.AimDirection) < 0.9f)
+        {
+            Failures.Add(label + ": auto-aim points " + aim.AimDirection.ToString("0.00") +
+                         " but the target is at " + toTarget.ToString("0.00"));
+        }
     }
 
     // The health, stamina and gold readouts used to sit on top of each other.

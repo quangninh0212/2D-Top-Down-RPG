@@ -10,7 +10,24 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class PlayerAimController : MonoBehaviour
 {
-    public static PlayerAimController Instance { get; private set; }
+    private static PlayerAimController instance;
+
+    // Self-healing on purpose. Every gameplay scene ships its own Player
+    // prefab, and the copy that loses the singleton race still runs Awake
+    // before it is destroyed. Reading the aim controller back off the live
+    // player means no ordering of those events can leave this null.
+    public static PlayerAimController Instance
+    {
+        get
+        {
+            if (instance == null && PlayerController.Instance != null)
+            {
+                instance = PlayerController.Instance.GetComponent<PlayerAimController>();
+            }
+
+            return instance;
+        }
+    }
 
     [SerializeField] private float autoTargetRadius = 9f;
 
@@ -46,12 +63,41 @@ public class PlayerAimController : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this;
+        // The scene's own Player is destroyed moments after this when a
+        // persistent one already exists. Claiming the singleton here would
+        // hand it to the copy that is about to die, and its OnDestroy would
+        // then clear it - leaving the surviving player with no aim controller
+        // and auto-targeting silently dead until the next trip through the
+        // main menu.
+        if (instance != null && instance != this) { return; }
+
+        instance = this;
+    }
+
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // The player walks into the next level still holding a target from the last
+    // one. That reference dies with its scene, and the scan interval means it
+    // would not be replaced for a fraction of a second - long enough to swing at
+    // nothing on arrival. Clearing it forces a fresh look immediately.
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene,
+                               UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        currentTarget = null;
+        nextTargetScanTime = 0f;
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) { Instance = null; }
+        if (instance == this) { instance = null; }
     }
 
     // Fed by PlayerController every frame so the fallback aim always points

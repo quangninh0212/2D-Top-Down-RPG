@@ -128,9 +128,12 @@ public static class SpawnDiagnostics
 
             if (blocked)
             {
+                // Naming the object rather than just its root, so "Environment"
+                // does not stand in for whichever prop is actually in the way.
                 reasons.Add(collider is CompositeCollider2D || collider is TilemapCollider2D
                     ? "collider on '" + collider.transform.name + "'"
-                    : collider.transform.root.name);
+                    : "'" + collider.transform.name + "' at " +
+                      ((Vector2)collider.transform.position).ToString("0.0"));
             }
         }
 
