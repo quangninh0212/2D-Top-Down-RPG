@@ -19,7 +19,18 @@ public enum GameSfx
     BossAttack,
     Victory,
     Purchase,
-    Denied
+    Denied,
+
+    // Added with the defence skills, the forbidden zone and the collision objects.
+    Warning,
+    ShieldUp,
+    ShieldBlock,
+    ShieldBreak,
+    Stun,
+    ChestOpen,
+    TrapHit,
+    SpeedUp,
+    Explosion
 }
 
 public enum GameMusic

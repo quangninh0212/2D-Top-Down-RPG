@@ -56,6 +56,17 @@ public static class PlaceholderAudioGenerator
         Write(SfxFolder, GameSfx.Victory.ToString(), Arpeggio(new[] { 523f, 659f, 784f, 1046f }, 1.1f));
         Write(SfxFolder, GameSfx.Purchase.ToString(), Arpeggio(new[] { 784f, 1046f }, 0.22f));
         Write(SfxFolder, GameSfx.Denied.ToString(), Arpeggio(new[] { 300f, 220f }, 0.22f));
+
+        // A two-tone siren blip; played several times in a row it reads as an alarm.
+        Write(SfxFolder, GameSfx.Warning.ToString(), Arpeggio(new[] { 988f, 740f }, 0.26f));
+        Write(SfxFolder, GameSfx.ShieldUp.ToString(), Sweep(260f, 900f, 0.3f));
+        Write(SfxFolder, GameSfx.ShieldBlock.ToString(), Blip(1500f, 0.08f, 0.3f));
+        Write(SfxFolder, GameSfx.ShieldBreak.ToString(), NoiseBurst(0.25f, 0.3f));
+        Write(SfxFolder, GameSfx.Stun.ToString(), Sweep(1400f, 200f, 0.45f));
+        Write(SfxFolder, GameSfx.ChestOpen.ToString(), Arpeggio(new[] { 523f, 784f, 1046f, 1318f }, 0.4f));
+        Write(SfxFolder, GameSfx.TrapHit.ToString(), Thud(140f, 0.2f));
+        Write(SfxFolder, GameSfx.SpeedUp.ToString(), Sweep(400f, 1600f, 0.22f));
+        Write(SfxFolder, GameSfx.Explosion.ToString(), NoiseBurst(0.5f, 0.45f));
     }
 
     private static float[] Blip(float frequency, float duration, float volume)

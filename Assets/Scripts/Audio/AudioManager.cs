@@ -56,11 +56,26 @@ public class AudioManager : MonoBehaviour
         LoadVolumes();
         BuildSources();
         LoadClips();
+
+        AudioToggles.Changed += ApplyVolumes;
     }
 
     private void OnDestroy()
     {
+        AudioToggles.Changed -= ApplyVolumes;
+
         if (Instance == this) { Instance = null; }
+    }
+
+    // Counts effects that actually reached a speaker. Lets tests confirm the
+    // sound switch really silences them rather than just changing an icon.
+    public static int SfxPlayedCount { get; private set; }
+
+    // The music switch mutes rather than stops, so turning it back on resumes
+    // the track where it was instead of restarting it.
+    private float EffectiveMusicVolume
+    {
+        get { return AudioToggles.MusicEnabled ? MasterVolume * MusicVolume : 0f; }
     }
 
     private void BuildSources()
@@ -115,6 +130,9 @@ public class AudioManager : MonoBehaviour
 
     private void PlaySfxInternal(GameSfx sfx)
     {
+        // The SoundOff switch silences every short effect, whatever its volume.
+        if (!AudioToggles.SfxEnabled) { return; }
+
         if (!sfxClips.TryGetValue(sfx, out AudioClip clip) || clip == null) { return; }
 
         if (lastPlayed.TryGetValue(sfx, out float last) && Time.unscaledTime - last < SameSfxCooldown)
@@ -129,6 +147,7 @@ public class AudioManager : MonoBehaviour
 
         source.pitch = Random.Range(0.96f, 1.04f);
         source.PlayOneShot(clip, MasterVolume * SfxVolume);
+        SfxPlayedCount++;
     }
 
     private void PlayMusicInternal(GameMusic music)
@@ -155,7 +174,7 @@ public class AudioManager : MonoBehaviour
         musicSource.clip = clip;
         musicSource.Play();
 
-        float target = MasterVolume * MusicVolume;
+        float target = EffectiveMusicVolume;
         float elapsed = 0f;
 
         while (elapsed < 0.4f)
@@ -225,7 +244,7 @@ public class AudioManager : MonoBehaviour
         // fade and the slider would fight each other.
         if (musicFade == null && musicSource.isPlaying)
         {
-            musicSource.volume = MasterVolume * MusicVolume;
+            musicSource.volume = EffectiveMusicVolume;
         }
     }
 

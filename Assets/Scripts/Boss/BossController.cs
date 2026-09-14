@@ -102,6 +102,9 @@ public class BossController : MonoBehaviour
 
         while (!defeated)
         {
+            // A stunned boss holds its fire until it recovers.
+            while (!defeated && EnemyStun.IsStunned(this)) { yield return null; }
+
             switch (phase)
             {
                 case 1:
@@ -137,7 +140,7 @@ public class BossController : MonoBehaviour
         while (elapsed < seconds && !defeated)
         {
             elapsed += Time.deltaTime;
-            Drift();
+            if (!EnemyStun.IsStunned(this)) { Drift(); }
             yield return null;
         }
     }
@@ -191,7 +194,8 @@ public class BossController : MonoBehaviour
     {
         yield return Telegraph();
 
-        if (defeated || PlayerController.Instance == null) { yield break; }
+        // Stunned during the wind-up: the attack fizzles.
+        if (defeated || PlayerController.Instance == null || EnemyStun.IsStunned(this)) { yield break; }
 
         Vector2 toPlayer = (Vector2)(PlayerController.Instance.transform.position - transform.position);
         float centre = Mathf.Atan2(toPlayer.y, toPlayer.x) * Mathf.Rad2Deg;
@@ -211,7 +215,7 @@ public class BossController : MonoBehaviour
     {
         yield return Telegraph();
 
-        if (defeated) { yield break; }
+        if (defeated || EnemyStun.IsStunned(this)) { yield break; }
 
         AudioManager.PlaySfx(GameSfx.BossAttack);
 

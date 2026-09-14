@@ -37,6 +37,13 @@ public class EnemyAI : MonoBehaviour
 
     private void Update()
     {
+        // Stunned: no roaming, no chasing, no attacks until it wears off.
+        if (EnemyStun.IsStunned(this))
+        {
+            enemyPathfinding.StopMoving();
+            return;
+        }
+
         MovementStateControl();
     }
 

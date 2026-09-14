@@ -128,6 +128,7 @@ public static class LevelSceneBuilder
         EnsureDefaultSpawn(scene, new Vector2(-12f, 0f));
         NudgeBlockedEntrances(scene);
         NudgeUnreachableEnemies(scene);
+        EnsureGameplayAdditions(scene);
 
         AssignPersistentIds(scene);
 
@@ -640,6 +641,7 @@ public static class LevelSceneBuilder
         EnsureDefaultSpawn(scene, defaultSpawn);
         NudgeBlockedEntrances(scene);
         NudgeUnreachableEnemies(scene);
+        EnsureGameplayAdditions(scene);
 
         AssignPersistentIds(scene);
         RemoveTemplateLeftovers(scene);
@@ -1192,6 +1194,169 @@ public static class LevelSceneBuilder
                 AssignId(destructible.gameObject, scene.name + ":prop:" + index++, used);
             }
         }
+
+        index = 0;
+
+        // Runes and chests are one-time rewards; the save file has to be able
+        // to say they are gone.
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            foreach (SpeedRune rune in root.GetComponentsInChildren<SpeedRune>(true))
+            {
+                AssignId(rune.gameObject, scene.name + ":item:" + index++, used);
+            }
+
+            foreach (TreasureChest chest in root.GetComponentsInChildren<TreasureChest>(true))
+            {
+                AssignId(chest.gameObject, scene.name + ":item:" + index++, used);
+            }
+        }
+    }
+
+    // ----- forbidden zone and collision objects ---------------------------
+
+    private const string AdditionsRootName = "Gameplay Additions";
+    private const string ChestSpritePath = "Assets/Sprites/Objects and buildings/Chest/spr_chest.png";
+    private const string HealthPickupPrefab = "Assets/Prefabs/Pickup/Health.prefab";
+    private const string ChestBurstPrefab = "Assets/Prefabs/VFX/Crate VFX.prefab";
+
+    // Adds one forbidden zone and one each of collision objects X, Y and Z to a
+    // level. Only ever adds: if the level already has them, it is left exactly
+    // as it is, so they can be moved by hand without the tool putting them back.
+    private static void EnsureGameplayAdditions(Scene scene)
+    {
+        foreach (GameObject existing in scene.GetRootGameObjects())
+        {
+            if (existing.name == AdditionsRootName) { return; }
+        }
+
+        HashSet<Vector2Int> reachable = WalkabilityDiagnostics.ReachableCells(scene);
+        if (reachable.Count == 0)
+        {
+            SoulboundSetupLog.Warn("No reachable area found in " + scene.name + "; gameplay additions skipped.");
+            return;
+        }
+
+        GameObject root = new GameObject(AdditionsRootName);
+        SceneManager.MoveGameObjectToScene(root, scene);
+
+        Vector2 spawn = Vector2.zero;
+        foreach (AreaEntrance entrance in FindAllInScene<AreaEntrance>(scene))
+        {
+            if (entrance.IsDefaultSpawn) { spawn = entrance.transform.position; break; }
+        }
+
+        List<Vector2> enemies = new List<Vector2>();
+        foreach (EnemyHealth enemy in FindAllInScene<EnemyHealth>(scene))
+        {
+            enemies.Add(enemy.transform.position);
+        }
+
+        List<Vector2> taken = new List<Vector2> { spawn };
+
+        // The zone guards the ground just in front of where the player arrives,
+        // which is also somewhere the enemies roam through.
+        Vector2 towardCentre = spawn.sqrMagnitude > 0.01f ? -spawn.normalized : Vector2.right;
+        Vector2 zoneSpot = PickSpot(scene, reachable, spawn + towardCentre * 4f, taken, enemies, 0f, 0f);
+        taken.Add(zoneSpot);
+
+        GameObject zone = new GameObject("Forbidden Zone");
+        zone.transform.SetParent(root.transform, false);
+        zone.transform.position = zoneSpot;
+        zone.AddComponent<ForbiddenZone>();
+
+        Vector2 runeSpot = PickSpot(scene, reachable, new Vector2(-7f, 5f), taken, enemies, 4f, 2.5f);
+        taken.Add(runeSpot);
+        CreateObject<SpeedRune>(root.transform, "Speed Rune (X)", runeSpot);
+
+        Vector2 trapSpot = PickSpot(scene, reachable, new Vector2(7f, -5f), taken, enemies, 4f, 2.5f);
+        taken.Add(trapSpot);
+        CreateObject<SpikeTrap>(root.transform, "Spike Trap (Y)", trapSpot);
+
+        Vector2 chestSpot = PickSpot(scene, reachable, new Vector2(7f, 5f), taken, enemies, 4f, 2.5f);
+        CreateChest(root.transform, chestSpot);
+
+        SoulboundSetupLog.Step("Added forbidden zone " + zoneSpot.ToString("0.0") + ", speed rune " +
+                               runeSpot.ToString("0.0") + ", spike trap " + trapSpot.ToString("0.0") +
+                               " and treasure chest " + chestSpot.ToString("0.0") + " to " + scene.name + ".");
+    }
+
+    // The nearest cell to where it would ideally go that the player can walk to,
+    // that is not inside anything, and that keeps its distance from the spawn,
+    // from the other additions and from enemies.
+    private static Vector2 PickSpot(Scene scene, HashSet<Vector2Int> reachable, Vector2 preferred,
+                                    List<Vector2> taken, List<Vector2> enemies,
+                                    float minFromTaken, float minFromEnemies)
+    {
+        List<Vector2Int> cells = new List<Vector2Int>(reachable);
+        cells.Sort((a, b) => ((Vector2)a - preferred).sqrMagnitude.CompareTo(((Vector2)b - preferred).sqrMagnitude));
+
+        foreach (Vector2Int cell in cells)
+        {
+            Vector2 point = cell;
+
+            if (Mathf.Abs(point.x) > ArenaWidth * 0.5f - 2f || Mathf.Abs(point.y) > ArenaHeight * 0.5f - 2f) { continue; }
+            if (TooClose(point, taken, minFromTaken) || TooClose(point, enemies, minFromEnemies)) { continue; }
+            if (SpawnDiagnostics.Blockers(scene, point).Count > 0) { continue; }
+
+            return point;
+        }
+
+        return cells.Count > 0 ? (Vector2)cells[0] : preferred;
+    }
+
+    private static bool TooClose(Vector2 point, List<Vector2> others, float minimum)
+    {
+        if (minimum <= 0f) { return false; }
+
+        foreach (Vector2 other in others)
+        {
+            if ((other - point).sqrMagnitude < minimum * minimum) { return true; }
+        }
+
+        return false;
+    }
+
+    private static T CreateObject<T>(Transform parent, string name, Vector2 position) where T : Component
+    {
+        GameObject go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.position = position;
+
+        return go.AddComponent<T>();
+    }
+
+    private static void CreateChest(Transform parent, Vector2 position)
+    {
+        GameObject go = new GameObject("Treasure Chest (Z)");
+        go.transform.SetParent(parent, false);
+        go.transform.position = position;
+
+        SpriteRenderer renderer = go.AddComponent<SpriteRenderer>();
+        renderer.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(ChestSpritePath);
+
+        BoxCollider2D trigger = go.AddComponent<BoxCollider2D>();
+        trigger.isTrigger = true;
+
+        if (renderer.sprite != null)
+        {
+            // Sized to sit with the crates and barrels, whatever the sprite's
+            // import scale.
+            Vector2 spriteSize = renderer.sprite.bounds.size;
+            float scale = spriteSize.x > 0.001f ? 1.1f / spriteSize.x : 1f;
+
+            go.transform.localScale = new Vector3(scale, scale, 1f);
+            trigger.size = spriteSize;
+        }
+
+        TreasureChest chest = go.AddComponent<TreasureChest>();
+
+        SerializedObject serialized = new SerializedObject(chest);
+        serialized.FindProperty("bonusItemPrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<GameObject>(HealthPickupPrefab);
+        serialized.FindProperty("burstEffectPrefab").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<GameObject>(ChestBurstPrefab);
+        serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void AssignId(GameObject target, string fallbackId, HashSet<string> used)

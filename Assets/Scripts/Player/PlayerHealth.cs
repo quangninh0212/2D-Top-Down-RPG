@@ -58,7 +58,9 @@ public class PlayerHealth : Singleton<PlayerHealth>
         if (isDead) { return; }
 
         EnemyAI enemy = other.gameObject.GetComponent<EnemyAI>();
-        if (enemy != null)
+
+        // A stunned enemy is harmless to touch - that is the point of the skill.
+        if (enemy != null && !EnemyStun.IsStunned(enemy))
         {
             TakeDamage(1, other.transform);
         }
@@ -90,6 +92,11 @@ public class PlayerHealth : Singleton<PlayerHealth>
     public void TakeDamage(int damageAmount, Transform hitTransform)
     {
         if (!canTakeDamage || isDead) { return; }
+
+        // Every source of damage comes through here, so this one check makes the
+        // shield stop arrows, splashes, boss projectiles and contact damage alike.
+        PlayerSkills skills = PlayerSkills.Instance;
+        if (skills != null && skills.AbsorbHit()) { return; }
 
         if (ScreenShakeManager.Instance != null) { ScreenShakeManager.Instance.ShakeScreen(); }
         if (knockback != null && hitTransform != null) { knockback.GetKnockedBack(hitTransform, knockBackThrustAmount); }

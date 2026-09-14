@@ -23,6 +23,40 @@ public class PlayerController : Singleton<PlayerController>
     private bool isDashing = false;
     private bool controlsEnabled = true;
 
+    // Temporary speed changes from the rune and the spike trap.
+    private readonly SpeedModifiers speedModifiers = new SpeedModifiers();
+
+    // Where the player is heading and how fast, for the HUD and the report.
+    public Vector2 MoveDirection
+    {
+        get { return movement.sqrMagnitude > 0.0001f ? movement.normalized : Vector2.zero; }
+    }
+
+    public float BaseMoveSpeed
+    {
+        get { return startingMoveSpeed > 0f ? startingMoveSpeed : moveSpeed; }
+    }
+
+    public float CurrentSpeedMultiplier
+    {
+        get { return speedModifiers.Multiplier(Time.time); }
+    }
+
+    public SpeedModifiers Modifiers
+    {
+        get { return speedModifiers; }
+    }
+
+    public void ApplySpeedBoost(float multiplier, float duration)
+    {
+        speedModifiers.ApplyBoost(multiplier, duration, Time.time);
+    }
+
+    public void ApplySlow(float multiplier, float duration)
+    {
+        speedModifiers.ApplySlow(multiplier, duration, Time.time);
+    }
+
     protected override void Awake()
     {
         base.Awake();
@@ -37,6 +71,9 @@ public class PlayerController : Singleton<PlayerController>
         // on the prefab, so an older prefab still gets one.
         aimController = GetComponent<PlayerAimController>();
         if (aimController == null) { aimController = gameObject.AddComponent<PlayerAimController>(); }
+
+        // Shield and stun live on the player too, added the same way.
+        if (GetComponent<PlayerSkills>() == null) { gameObject.AddComponent<PlayerSkills>(); }
     }
 
     private void Start()
@@ -123,7 +160,8 @@ public class PlayerController : Singleton<PlayerController>
         if (knockback != null && knockback.GettingKnockedBack) { return; }
         if (PlayerHealth.Instance != null && PlayerHealth.Instance.isDead) { return; }
 
-        rb.MovePosition(rb.position + movement * (moveSpeed * Time.fixedDeltaTime));
+        float speed = moveSpeed * speedModifiers.Multiplier(Time.time);
+        rb.MovePosition(rb.position + movement * (speed * Time.fixedDeltaTime));
     }
 
     // The sprite faces wherever the weapon is aimed, which on touch means the

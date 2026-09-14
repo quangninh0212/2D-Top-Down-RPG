@@ -39,6 +39,23 @@ public class GameplayRuntime : MonoBehaviour
     private GameOverUI gameOver;
     private BossHealthBarUI bossBar;
 
+    // Sound and music switches. Each pair shares one position and one size;
+    // only one of the two is ever visible.
+    private GameObject soundOffObject;
+    private GameObject soundOnObject;
+    private GameObject musicOnObject;
+    private GameObject musicOffObject;
+
+    private Image shieldCooldownDial;
+    private Image stunCooldownDial;
+    private Text shieldLabel;
+    private Text stunLabel;
+
+    private Text objectiveText;
+    private Text effectsText;
+    private Text skillStatusText;
+    private float nextInfoRefresh;
+
     private class WeaponSlotView
     {
         public WeaponType Weapon;
@@ -89,6 +106,7 @@ public class GameplayRuntime : MonoBehaviour
         ActiveInventory.OnWeaponChanged += OnWeaponChanged;
         GameSaveManager.OnGoldOrProgressChanged += RefreshWeaponSlots;
         PlayerHealth.OnPlayerDied += OnPlayerDied;
+        AudioToggles.Changed += RefreshAudioToggles;
     }
 
     private void OnDisable()
@@ -99,6 +117,7 @@ public class GameplayRuntime : MonoBehaviour
         ActiveInventory.OnWeaponChanged -= OnWeaponChanged;
         GameSaveManager.OnGoldOrProgressChanged -= RefreshWeaponSlots;
         PlayerHealth.OnPlayerDied -= OnPlayerDied;
+        AudioToggles.Changed -= RefreshAudioToggles;
     }
 
     private void OnDestroy()
@@ -170,6 +189,14 @@ public class GameplayRuntime : MonoBehaviour
     private void Update()
     {
         HandleBackButton();
+        RefreshSkillButtons();
+
+        // Text only needs to change a few times a second.
+        if (Time.unscaledTime >= nextInfoRefresh)
+        {
+            nextInfoRefresh = Time.unscaledTime + 0.2f;
+            RefreshInfoPanel();
+        }
     }
 
     // Android's back gesture should never drop the player straight out of a run.
@@ -198,6 +225,9 @@ public class GameplayRuntime : MonoBehaviour
         BuildJoystick();
         BuildActionButtons();
         BuildTopBar();
+        BuildAudioToggles();
+        BuildSkillButtons();
+        BuildInfoPanel();
         BuildWeaponSlots();
         BuildBanner();
         BuildToast();
@@ -287,6 +317,225 @@ public class GameplayRuntime : MonoBehaviour
     {
         PixelUI.NewRoundButton("PauseButton", controlsRoot.transform, "☰", 110f,
             new Vector2(1f, 1f), new Vector2(-70f, -70f), new Color(0.10f, 0.12f, 0.16f, 0.85f), TogglePause);
+    }
+
+    // ----- sound and music switches --------------------------------------
+
+    private const float ToggleSize = 100f;
+    private static readonly Vector2 SoundTogglePosition = new Vector2(-70f, -200f);
+    private static readonly Vector2 MusicTogglePosition = new Vector2(-70f, -320f);
+
+    // Four objects, not two buttons that change their picture: the brief asks
+    // for SoundOff to be replaced by a separate SoundOn object in the same place
+    // and at the same size, and the same for MusicOn and MusicOff.
+    private void BuildAudioToggles()
+    {
+        soundOffObject = BuildToggle("SoundOff", SoundTogglePosition, GameplaySprites.SpeakerOff,
+                                     () => AudioToggles.SfxEnabled = false);
+
+        soundOnObject = BuildToggle("SoundOn", SoundTogglePosition, GameplaySprites.SpeakerOn,
+                                    () => AudioToggles.SfxEnabled = true);
+
+        musicOnObject = BuildToggle("MusicOn", MusicTogglePosition, GameplaySprites.MusicOn,
+                                    () => AudioToggles.MusicEnabled = true);
+
+        musicOffObject = BuildToggle("MusicOff", MusicTogglePosition, GameplaySprites.MusicOff,
+                                     () => AudioToggles.MusicEnabled = false);
+
+        RefreshAudioToggles();
+    }
+
+    private GameObject BuildToggle(string name, Vector2 position, Sprite icon, System.Action onClick)
+    {
+        Button button = PixelUI.NewRoundButton(name, controlsRoot.transform, "", ToggleSize,
+            new Vector2(1f, 1f), position, new Color(0.10f, 0.12f, 0.16f, 0.85f), () =>
+            {
+                onClick();
+                AudioManager.PlaySfx(GameSfx.UiClick);
+            });
+
+        Image image = PixelUI.NewImage("Icon", button.transform);
+        image.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        image.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        image.rectTransform.sizeDelta = new Vector2(ToggleSize * 0.56f, ToggleSize * 0.56f);
+        image.sprite = icon;
+        image.preserveAspect = true;
+        image.raycastTarget = false;
+
+        return button.gameObject;
+    }
+
+    // SoundOff is what you tap to silence effects, so it is the one on screen
+    // while they are playing - and likewise MusicOn is on screen while music is
+    // off.
+    private void RefreshAudioToggles()
+    {
+        bool sfx = AudioToggles.SfxEnabled;
+        bool music = AudioToggles.MusicEnabled;
+
+        if (soundOffObject != null) { soundOffObject.SetActive(sfx); }
+        if (soundOnObject != null) { soundOnObject.SetActive(!sfx); }
+        if (musicOffObject != null) { musicOffObject.SetActive(music); }
+        if (musicOnObject != null) { musicOnObject.SetActive(!music); }
+    }
+
+    // ----- defensive skills ----------------------------------------------
+
+    private void BuildSkillButtons()
+    {
+        Vector2 anchor = new Vector2(1f, 0f);
+
+        Button shieldButton = PixelUI.NewRoundButton("ShieldButton", controlsRoot.transform, "KHIÊN", 140f,
+            anchor, new Vector2(-420f, 330f), new Color(0.12f, 0.40f, 0.55f, 0.8f), () =>
+            {
+                if (PlayerSkills.Instance != null) { PlayerSkills.Instance.TryShield(); }
+            });
+
+        Button stunButton = PixelUI.NewRoundButton("StunButton", controlsRoot.transform, "CHOÁNG", 140f,
+            anchor, new Vector2(-620f, 170f), new Color(0.45f, 0.38f, 0.10f, 0.8f), () =>
+            {
+                if (PlayerSkills.Instance != null) { PlayerSkills.Instance.TryStun(); }
+            });
+
+        shieldCooldownDial = AddCooldownDial(shieldButton);
+        stunCooldownDial = AddCooldownDial(stunButton);
+        shieldLabel = shieldButton.GetComponentInChildren<Text>();
+        stunLabel = stunButton.GetComponentInChildren<Text>();
+    }
+
+    // A dark sweep over the button that shrinks as the skill recharges.
+    private static Image AddCooldownDial(Button button)
+    {
+        Image dial = PixelUI.NewImage("Cooldown", button.transform);
+        PixelUI.Stretch(dial.rectTransform);
+        dial.sprite = PixelUI.Disc;
+        dial.type = Image.Type.Filled;
+        dial.fillMethod = Image.FillMethod.Radial360;
+        dial.fillOrigin = (int)Image.Origin360.Top;
+        dial.fillClockwise = false;
+        dial.color = new Color(0f, 0f, 0f, 0.62f);
+        dial.fillAmount = 0f;
+        dial.raycastTarget = false;
+
+        // Under the label, over the button face.
+        dial.transform.SetSiblingIndex(1);
+        return dial;
+    }
+
+    private void RefreshSkillButtons()
+    {
+        PlayerSkills skills = PlayerSkills.Instance;
+        if (skills == null) { return; }
+
+        float now = Time.time;
+
+        UpdateSkillButton(shieldCooldownDial, shieldLabel, skills.Shield, now, "KHIÊN");
+        UpdateSkillButton(stunCooldownDial, stunLabel, skills.StunSkill, now, "CHOÁNG");
+    }
+
+    private static void UpdateSkillButton(Image dial, Text label, SkillCooldown skill, float now, string name)
+    {
+        if (dial != null) { dial.fillAmount = skill.CooldownFraction(now); }
+        if (label == null) { return; }
+
+        label.text = skill.IsReady(now) ? name : Mathf.CeilToInt(skill.RemainingCooldown(now)) + "s";
+    }
+
+    // ----- information panel ---------------------------------------------
+
+    // Sits under health, stamina and gold: what is left to kill, what is
+    // currently affecting the player, and whether the skills are ready.
+    private void BuildInfoPanel()
+    {
+        objectiveText = NewInfoLine("ObjectiveText", -186f, PixelUI.Gold);
+        effectsText = NewInfoLine("EffectsText", -226f, new Color(0.55f, 0.9f, 1f));
+        skillStatusText = NewInfoLine("SkillStatusText", -266f, PixelUI.Cream);
+    }
+
+    private Text NewInfoLine(string name, float y, Color colour)
+    {
+        Text text = PixelUI.NewBody(name, controlsRoot.transform, "", 28);
+        text.alignment = TextAnchor.MiddleLeft;
+        text.color = colour;
+
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.sizeDelta = new Vector2(760f, 36f);
+        rect.anchoredPosition = new Vector2(16f, y);
+
+        // Readable over grass and over water alike.
+        Outline outline = text.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        return text;
+    }
+
+    private void RefreshInfoPanel()
+    {
+        if (objectiveText == null) { return; }
+
+        objectiveText.text = ObjectiveLine();
+        effectsText.text = EffectsLine();
+        skillStatusText.text = SkillLine();
+    }
+
+    private static string ObjectiveLine()
+    {
+        if (FindObjectOfType<BossHealth>() != null) { return "MỤC TIÊU: ĐÁNH BẠI SOUL WARDEN"; }
+
+        LevelManager level = LevelManager.Instance;
+        if (level == null) { return ""; }
+
+        if (level.GateOpen) { return "CỔNG ĐÃ MỞ - TIẾN TỚI KHU VỰC TIẾP THEO"; }
+
+        return "QUÁI CÒN LẠI: " + level.RemainingMandatoryEnemies + " / " + level.TotalMandatoryEnemies;
+    }
+
+    private static string EffectsLine()
+    {
+        PlayerController player = PlayerController.Instance;
+        PlayerSkills skills = PlayerSkills.Instance;
+        if (player == null) { return ""; }
+
+        float now = Time.time;
+        List<string> parts = new List<string>();
+
+        if (skills != null && skills.ShieldActive)
+        {
+            parts.Add("KHIÊN " + Mathf.CeilToInt(skills.Shield.RemainingActive(now)) + "s");
+        }
+
+        if (player.Modifiers.IsBoosted(now))
+        {
+            parts.Add("TĂNG TỐC " + Mathf.CeilToInt(player.Modifiers.BoostRemaining(now)) + "s");
+        }
+
+        if (player.Modifiers.IsSlowed(now))
+        {
+            parts.Add("BỊ LÀM CHẬM " + Mathf.CeilToInt(player.Modifiers.SlowRemaining(now)) + "s");
+        }
+
+        if (parts.Count == 0) { return ""; }
+
+        return string.Join("   ", parts) + "   (TỐC ĐỘ x" + player.CurrentSpeedMultiplier.ToString("0.0") + ")";
+    }
+
+    private static string SkillLine()
+    {
+        PlayerSkills skills = PlayerSkills.Instance;
+        if (skills == null) { return ""; }
+
+        float now = Time.time;
+
+        return "[Q] KHIÊN: " + SkillState(skills.Shield, now) + "     [E] CHOÁNG: " + SkillState(skills.StunSkill, now);
+    }
+
+    private static string SkillState(SkillCooldown skill, float now)
+    {
+        return skill.IsReady(now) ? "SẴN SÀNG" : "HỒI " + Mathf.CeilToInt(skill.RemainingCooldown(now)) + "s";
     }
 
     // Three slots showing what the player owns; locked ones are dimmed and

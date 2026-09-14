@@ -250,6 +250,24 @@ public static class GameplaySmokeTest
         string[] names = { "Heart Container", "Stamina Container", "Gold Coin Container" };
         List<Rect> rects = new List<Rect>();
 
+        // In batch mode the canvas can report an absurd size (~1e9). At that
+        // magnitude a float only resolves to steps of 128, so when Unity
+        // re-derives a child's position from it, -66 and -118 both come back as
+        // -128. Measured: re-applying the layout restores the exact values, so
+        // nothing actually moved them. Positions are only trusted as-is when the
+        // canvas is a sane size; otherwise the layout is applied first and its
+        // own arithmetic is what gets checked.
+        RectTransform canvasRect = UIFade.Instance != null ? UIFade.Instance.transform as RectTransform : null;
+        float canvasHeight = canvasRect != null ? canvasRect.rect.height : 0f;
+        bool geometryTrustworthy = canvasHeight > 1f && canvasHeight < 100000f;
+
+        if (!geometryTrustworthy)
+        {
+            Report.AppendLine("  HUD canvas height " + canvasHeight.ToString("0") +
+                              " is not usable in batch mode; checking the layout values as applied.");
+            HudLayout.Apply();
+        }
+
         for (int i = 0; i < names.Length; i++)
         {
             RectTransform rect = FindRect(names[i]);

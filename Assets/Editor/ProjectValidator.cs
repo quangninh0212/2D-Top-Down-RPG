@@ -344,6 +344,7 @@ public static class ProjectValidator
         if (gates.Count == 0) { failures.Add(expectation.Scene + " has no gates"); }
 
         CheckBakedCollisionMatchesTiles(scene, expectation.Scene, report, failures);
+        CheckGameplayAdditions(scene, expectation.Scene, report, failures);
     }
 
     // A CompositeCollider2D stores its outline in the scene file. If that
@@ -398,6 +399,30 @@ public static class ProjectValidator
                 }
             }
         }
+    }
+
+    // Every level needs a forbidden zone and one each of the three collision
+    // objects the brief calls X, Y and Z.
+    private static void CheckGameplayAdditions(Scene scene, string sceneName,
+                                               StringBuilder report, List<string> failures)
+    {
+        int zones = 0, runes = 0, traps = 0, chests = 0;
+
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            zones += root.GetComponentsInChildren<ForbiddenZone>(true).Length;
+            runes += root.GetComponentsInChildren<SpeedRune>(true).Length;
+            traps += root.GetComponentsInChildren<SpikeTrap>(true).Length;
+            chests += root.GetComponentsInChildren<TreasureChest>(true).Length;
+        }
+
+        report.AppendLine("  forbidden zones: " + zones + ", speed runes (X): " + runes +
+                          ", spike traps (Y): " + traps + ", chests (Z): " + chests);
+
+        if (zones == 0) { failures.Add(sceneName + " has no forbidden zone"); }
+        if (runes == 0) { failures.Add(sceneName + " has no speed rune (collision object X)"); }
+        if (traps == 0) { failures.Add(sceneName + " has no spike trap (collision object Y)"); }
+        if (chests == 0) { failures.Add(sceneName + " has no treasure chest (collision object Z)"); }
     }
 
     private static int CountOutlineVertices(CompositeCollider2D composite)

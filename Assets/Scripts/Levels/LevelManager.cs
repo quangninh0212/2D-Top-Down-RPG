@@ -52,6 +52,8 @@ public class LevelManager : MonoBehaviour
     {
         EnemyHealth.OnEnemyDied -= HandleEnemyDied;
         Destructible.OnDestructibleDestroyed -= HandleDestructibleDestroyed;
+        SpeedRune.OnConsumed -= HandleRuneConsumed;
+        TreasureChest.OnOpened -= HandleChestOpened;
 
         if (Instance == this) { Instance = null; }
     }
@@ -70,6 +72,8 @@ public class LevelManager : MonoBehaviour
 
         EnemyHealth.OnEnemyDied += HandleEnemyDied;
         Destructible.OnDestructibleDestroyed += HandleDestructibleDestroyed;
+        SpeedRune.OnConsumed += HandleRuneConsumed;
+        TreasureChest.OnOpened += HandleChestOpened;
 
         // A level that was already finished stays finished, even on a revisit.
         if (state.completed || state.gateOpen || RemainingMandatoryEnemies == 0)
@@ -192,6 +196,30 @@ public class LevelManager : MonoBehaviour
         {
             OpenGate(true);
         }
+    }
+
+    // A taken rune or an opened chest stays gone, or walking out and back in
+    // would hand out the same speed boost and gold again.
+    private void HandleRuneConsumed(SpeedRune rune)
+    {
+        if (rune == null || state == null || rune.gameObject.scene != gameObject.scene) { return; }
+
+        state.MarkRemoved(rune.PersistentId);
+    }
+
+    private void HandleChestOpened(TreasureChest chest)
+    {
+        if (chest == null || state == null || chest.gameObject.scene != gameObject.scene) { return; }
+
+        state.MarkRemoved(chest.PersistentId);
+
+        GameSaveManager save = GameSaveManager.Instance;
+        if (save != null) { save.SaveRun(); }
+    }
+
+    public int TotalMandatoryEnemies
+    {
+        get { return mandatoryEnemies.Count; }
     }
 
     private void HandleDestructibleDestroyed(Destructible destructible)
