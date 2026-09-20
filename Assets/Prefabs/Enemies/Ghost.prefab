@@ -397,6 +397,7 @@ MonoBehaviour:
   retreatDuration: 3
   ambushRange: 5
   standOffRange: 3.6
+  attackRange: 5
   attackCooldown: 2.4
   blinkCooldown: 7
   blinkTriggerRange: 6.5

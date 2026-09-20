@@ -10,6 +10,10 @@ public class EnemyHealth : MonoBehaviour
     // destroyed, so listeners can still read its id.
     public static event Action<EnemyHealth> OnEnemyDied;
 
+    // Raised whenever an enemy is hit, so its brain can react to being shot at
+    // from somewhere it was not looking.
+    public static event Action<EnemyHealth> OnEnemyDamaged;
+
     [SerializeField] protected int startingHealth = 3;
     [SerializeField] private GameObject deathVFXPrefab;
     [SerializeField] private float knockBackThrust = 15f;
@@ -90,6 +94,8 @@ public class EnemyHealth : MonoBehaviour
         if (flash != null) { StartCoroutine(flash.FlashRoutine()); }
 
         AudioManager.PlaySfx(GameSfx.EnemyHurt);
+
+        OnEnemyDamaged?.Invoke(this);
 
         StartCoroutine(CheckDetectDeathRoutine());
     }

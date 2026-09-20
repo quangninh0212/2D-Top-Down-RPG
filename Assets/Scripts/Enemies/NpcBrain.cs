@@ -38,6 +38,8 @@ public abstract class NpcBrain : MonoBehaviour
     private Vector2 home;
     private Vector2 patrolDirection;
     private float nextPatrolTurn;
+    private Vector2 lastPatrolPosition;
+    private float nextStuckCheck;
     private GameObject alertMarker;
     private float alertMarkerUntil;
     private float investigateUntil;
@@ -83,11 +85,31 @@ public abstract class NpcBrain : MonoBehaviour
     protected virtual void OnEnable()
     {
         NpcAlertNetwork.OnSighting += OnAllySighting;
+        EnemyHealth.OnEnemyDamaged += OnDamaged;
     }
 
     protected virtual void OnDisable()
     {
         NpcAlertNetwork.OnSighting -= OnAllySighting;
+        EnemyHealth.OnEnemyDamaged -= OnDamaged;
+    }
+
+    // Shot from behind, or from further off than it can see: an arrow in the
+    // back is as good as a sighting, and standing there taking it would be the
+    // least intelligent thing an NPC could do.
+    private void OnDamaged(EnemyHealth damaged)
+    {
+        if (damaged == null || damaged.gameObject != gameObject) { return; }
+
+        PlayerController player = PlayerController.Instance;
+        if (player == null) { return; }
+
+        bool firstContact = !RemembersPlayer;
+
+        lastKnownPlayerPosition = player.transform.position;
+        lastSeenTime = Time.time;
+
+        if (firstContact) { NoticePlayer(lastKnownPlayerPosition); }
     }
 
     protected virtual void OnDestroy()
@@ -173,9 +195,10 @@ public abstract class NpcBrain : MonoBehaviour
         {
             if (Time.time < retreatUntil) { return; }
 
-            state = RemembersPlayer ? BrainState.Engage : BrainState.Patrol;
+            // Coming back is not the same as having the player in front of it:
+            // the normal decision below picks the state, so a retreat cannot
+            // end in a chase after somebody it can no longer see.
             OnRetreatEnded();
-            return;
         }
 
         if (!hasRetreated && ShouldRetreat())
@@ -262,6 +285,21 @@ public abstract class NpcBrain : MonoBehaviour
     // enemies do not all drift into one corner over time.
     protected virtual void Patrol()
     {
+        // Pressed against a wall looks exactly like standing still, and the
+        // steering only probes a little way ahead, so a patrol that has stopped
+        // getting anywhere picks a new direction rather than leaning on it.
+        if (Time.time >= nextStuckCheck)
+        {
+            if (Vector2.Distance(transform.position, lastPatrolPosition) < 0.08f)
+            {
+                patrolDirection = Random.insideUnitCircle.normalized;
+                nextPatrolTurn = Time.time + Random.Range(1.5f, 3f);
+            }
+
+            lastPatrolPosition = transform.position;
+            nextStuckCheck = Time.time + 0.6f;
+        }
+
         if (Time.time >= nextPatrolTurn)
         {
             nextPatrolTurn = Time.time + Random.Range(1.5f, 3f);

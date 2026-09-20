@@ -10,12 +10,19 @@ public class GhostAmbusherBrain : NpcBrain
 {
     [SerializeField] private float ambushRange = 5f;
     [SerializeField] private float standOffRange = 3.6f;
+
+    // Same reach the old EnemyAI had: a ghost never shoots at something it
+    // could not have reached before.
+    [SerializeField] private float attackRange = 5f;
+
     [SerializeField] private float attackCooldown = 2.4f;
     [SerializeField] private float blinkCooldown = 7f;
     [SerializeField] private float blinkTriggerRange = 4.6f;
     [SerializeField] private float blinkBehindDistance = 2.2f;
 
-    private const float DormantAlpha = 0.35f;
+    // Faded, but plainly there: it drifts around in this state, so it has to be
+    // visible enough to be read as an enemy rather than as scenery.
+    private const float DormantAlpha = 0.55f;
 
     private IEnemy weapon;
     private float nextAttackTime;
@@ -56,11 +63,11 @@ public class GhostAmbusherBrain : NpcBrain
         base.NoticePlayer(playerPosition);
     }
 
-    // Waiting, not wandering: an ambusher that drifts around is just a slow
-    // shooter.
+    // It drifts around its haunt while it waits, half faded, the way it always
+    // did. Standing perfectly still until touched read as a broken enemy.
     protected override void Patrol()
     {
-        Hold();
+        base.Patrol();
     }
 
     // It lost the player. Rather than jog after them in the open, it steps
@@ -96,12 +103,13 @@ public class GhostAmbusherBrain : NpcBrain
             Hold();
         }
 
-        if (clearLine) { TryShoot(); }
+        if (clearLine) { TryShoot(distance); }
     }
 
-    private void TryShoot()
+    private void TryShoot(float distance)
     {
         if (weapon == null || Time.time < nextAttackTime) { return; }
+        if (distance > attackRange) { return; }
 
         nextAttackTime = Time.time + attackCooldown;
         weapon.Attack();
@@ -119,10 +127,14 @@ public class GhostAmbusherBrain : NpcBrain
             ? player.MoveDirection.normalized
             : ((Vector2)transform.position - playerPosition).normalized;
 
-        for (int attempt = 0; attempt < 6; attempt++)
+        // Twelve directions at two distances: behind the player is the first
+        // choice, but a blink that finds nowhere to land at all would leave the
+        // ghost trudging along in the open, which is the thing it must not do.
+        for (int attempt = 0; attempt < 24; attempt++)
         {
-            Vector2 direction = NpcSenses.Rotate(-facing, attempt * 60f);
-            Vector2 candidate = playerPosition + direction * blinkBehindDistance;
+            Vector2 direction = NpcSenses.Rotate(-facing, (attempt % 12) * 30f);
+            float reach = attempt < 12 ? blinkBehindDistance : blinkBehindDistance * 0.7f;
+            Vector2 candidate = playerPosition + direction * reach;
 
             if (!NpcSenses.IsFree(gameObject, candidate, 0.35f)) { continue; }
             if (!NpcSenses.HasLineOfSight(gameObject, candidate, playerPosition)) { continue; }

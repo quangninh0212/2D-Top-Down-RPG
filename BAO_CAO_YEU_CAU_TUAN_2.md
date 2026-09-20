@@ -224,6 +224,9 @@ loại nào cũng cần:
 | **Dấu chấm than** | Hiện biểu tượng `!` trên đầu khi vừa phát hiện, để người chơi đọc được trạng thái của quái |
 | **Né vật cản** | Hướng đi bị tường chắn thì tự thử lệch 25°, 50°, 75°, 90° sang hai bên thay vì húc thẳng vào tường |
 | **Rút lui khi yếu** | Máu còn ≤ 1/3 thì bỏ chạy 3 giây rồi quay lại; mỗi con chỉ rút lui một lần trong đời |
+| **Phản ứng khi bị đánh** | Bị bắn từ phía sau hoặc từ ngoài tầm nhìn thì vẫn quay lại tìm người chơi, thay vì đứng chịu trận |
+| **Tầm đánh có giới hạn** | Mọi đòn đánh chỉ thực hiện trong **5 đơn vị** — đúng bằng tầm của bản cũ, kể cả khi đang rút lui |
+| **Tự gỡ kẹt** | Đi tuần mà 0,6 giây không nhúc nhích (húc vào tường) thì tự đổi hướng khác |
 | **Tôn trọng kỹ năng choáng** | Đang bị choáng thì bộ não ngừng hẳn, không lách luật |
 
 `EnemyAI` cũ được tắt đi chứ không xóa, nên những thứ đã gắn với nó (sát thương khi chạm, kỹ năng
@@ -240,7 +243,7 @@ choáng) vẫn chạy nguyên.
 ### NPC 2 — Grape: **ném cầm chân từ xa** (`GrapeThrowerBrain`)
 
 - Giữ **khoảng cách ưa thích ~4,2 đơn vị**: người chơi lại gần dưới 2,6 thì **vừa lùi vừa ném**, xa
-  quá thì tiến lên.
+  quá thì tiến lên. Chỉ ném khi người chơi trong **tầm 5 đơn vị**, đúng bằng tầm của bản cũ.
 - Ở đúng tầm thì **đi ngang qua lại**, đổi chiều sau mỗi 1,5 giây, nên khó bị nhắm trúng.
 - **Không ném khi bị tường chắn** — thay vào đó di chuyển để lấy lại đường ngắm. Đây là khác biệt lớn
   so với bản cũ: quái cũ ném cả vào tường.
@@ -248,9 +251,11 @@ choáng) vẫn chạy nguyên.
 
 ### NPC 3 — Ghost: **mai phục và dịch chuyển** (`GhostAmbusherBrain`)
 
-- Khi chưa bị đánh động: **mờ 35%, đứng yên**, không tuần tra — đúng nghĩa nằm rình.
+- Khi chưa bị đánh động: **mờ 55% và lượn lờ quanh chỗ của nó** như bản gốc — nó vẫn di chuyển, chỉ
+  là chưa để ý tới người chơi.
 - Người chơi bước vào bán kính 5 đơn vị và có đường ngắm: **hiện hình**, hú báo, lao vào giao chiến.
-- Giao chiến: giữ khoảng cách ~3,6 đơn vị và bắn.
+  Bị bắn từ xa cũng khiến nó hiện hình và đi tìm.
+- Giao chiến: giữ khoảng cách ~3,6 đơn vị và bắn, chỉ bắn trong tầm 5 đơn vị.
 - Mất dấu hoặc người chơi chạy xa: **dịch chuyển ra sau lưng người chơi** (thử 6 hướng, chỉ chọn chỗ
   trống và nhìn thấy người chơi), kèm hiệu ứng vòng sáng tím ở cả điểm đi lẫn điểm đến, hồi 7 giây một
   lần — thay vì lẽo đẽo chạy theo.
@@ -347,13 +352,16 @@ Sau khi sửa bốn lỗi giao diện nêu ở dưới, các bài `ScreenSmokeTe
 - Đưa người chơi tới sát 1 con → con đó chuyển sang giao chiến, phát báo động, **3 đồng bọn khác lập
   tức phản ứng** theo lời gọi.
 
-**AI ném từ xa:** người chơi áp sát 1,20 đơn vị → sau hơn một giây quái đã lùi ra **2,64** đơn vị, vẫn
+**AI ném từ xa:** người chơi áp sát 1,20 đơn vị → sau hơn một giây quái đã lùi ra **2,61** đơn vị, vẫn
 ném được 2 lần khi có đường ngắm; đưa người chơi ra khỏi tầm nhìn thì **số lần ném không tăng thêm**
-và quái thôi giao chiến.
+và quái thôi giao chiến; **đánh nó bị thương rồi chạy ra 12,2 đơn vị** thì số lần ném vẫn đứng yên —
+đây chính là lỗi "bắn xa vô hạn" đã sửa.
 
-**AI mai phục:** ghost chờ ở trạng thái mờ (alpha 0,35), chưa hiện hình; người chơi bước vào 2,5 đơn
-vị → **hiện hình (alpha 1,00) và giao chiến**; người chơi chạy ra 7 đơn vị → quái **dịch chuyển 1
-lần** và khoảng cách rút còn **3,00** đơn vị.
+**AI mai phục:** ghost chờ ở trạng thái mờ (alpha 0,55) và **đi lang thang khoảng 3,5–4 đơn vị trong
+2 giây**, chưa hiện hình; bắn nó từ **9 đơn vị** (ngoài tầm nhìn của nó) → **hiện hình và rời trạng
+thái tuần tra**; người chơi bước vào 2,5 đơn vị → **hiện hình hẳn (alpha 1,00) và giao chiến**; người
+chơi chạy ra 9 đơn vị → quái **dịch chuyển** và áp sát lại còn khoảng **1,4–2,2** đơn vị. Bài kiểm
+thử này đã chạy **3 lần liên tiếp đều đạt** để chắc chắn không phụ thuộc may rủi.
 
 **Ba màn hình mới:** màn Tiến trình liệt kê đủ 5 màn (màn đã qua hiện "HOÀN THÀNH 01:04", màn chưa
 chơi hiện "CHƯA MỞ"), đếm đúng 1 lần thất bại; màn Thành tích liệt kê đủ 5 cột mốc và đánh dấu đúng
@@ -370,6 +378,28 @@ cột mốc đã đạt; màn Cài đặt có đủ thanh trượt và hai công
    bảng. Nay bảng cao hơn, nút đẩy xuống thấp hơn.
 4. **Màn hình Cài đặt hiện hai lần chữ "CÀI ĐẶT"**, và số "100%" bị núm trượt che thành "00%". Nay bỏ
    tiêu đề thừa và dời số ra chỗ trống — sửa ở bảng dùng chung nên trang chủ và menu tạm dừng cũng hết lỗi.
+
+### Hai lỗi phát hiện khi chơi thử trên máy thật
+
+Sau khi chơi thử, có hai chỗ AI mới làm hỏng cảm giác chơi so với bản cũ. Cả hai đã sửa và bổ sung
+bài kiểm thử riêng để không tái diễn:
+
+1. **Grape ném trúng người chơi ở mọi khoảng cách.** Quái Grape chỉ có 3 máu, nên vừa trúng một đòn
+   là rơi xuống ngưỡng "rút lui"; mà ở trạng thái rút lui, mã cũ cho phép ném **không giới hạn
+   khoảng cách**. Kết quả: người chơi lướt đi xa bao nhiêu vẫn bị đạn bám theo. Nay mọi trạng thái
+   đều chỉ ném trong **tầm 5 đơn vị** — đúng bằng tầm của bản gốc. Thêm vào đó, khi hết rút lui quái
+   không còn tự động nhảy vào trạng thái giao chiến nếu không thật sự nhìn thấy người chơi.
+   *Kiểm thử mới:* làm quái bị thương rồi cho người chơi chạy ra 12 đơn vị — số lần ném không tăng.
+
+2. **Ghost đứng im như tượng.** Thiết kế "nằm rình" làm nó bất động cho tới khi người chơi tới sát,
+   trong khi bản gốc nó lượn lờ khắp nơi. Nay nó **vẫn lang thang quanh khu vực của mình** (mờ 55%),
+   chỉ là chưa phát hiện người chơi; tới gần thì mới hiện hình và tấn công. Ngoài ra **bị bắn từ
+   ngoài tầm nhìn cũng đánh thức nó** — trước đây bắn từ xa thì nó không phản ứng gì.
+   *Kiểm thử mới:* đo quãng đường nó đi trong 2 giây (khoảng 3,5–4 đơn vị) và bắn nó từ 9 đơn vị để
+   xác nhận nó hiện hình và đi tìm.
+
+Trong lúc sửa còn phát hiện NPC đi tuần có thể **húc vào tường và đứng yên tại chỗ**; nay cứ 0,6 giây
+không nhúc nhích là nó tự đổi hướng.
 
 ### Một lỗi logic đã tìm ra và sửa trong quá trình kiểm thử
 

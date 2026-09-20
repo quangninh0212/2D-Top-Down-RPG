@@ -10,6 +10,12 @@ public class GrapeThrowerBrain : NpcBrain
 {
     [SerializeField] private float preferredRange = 4.2f;
     [SerializeField] private float tooCloseRange = 2.6f;
+
+    // The distance it can actually throw, and the one number that decides
+    // whether a thrower feels fair. It matches the range the old EnemyAI used,
+    // so a Grape reaches no further than it ever did.
+    [SerializeField] private float attackRange = 5f;
+
     [SerializeField] private float attackCooldown = 2f;
     [SerializeField] private float strafeInterval = 1.5f;
 
@@ -76,6 +82,11 @@ public class GrapeThrowerBrain : NpcBrain
     private void TryThrow(Vector2 playerPosition)
     {
         if (weapon == null || Time.time < nextAttackTime) { return; }
+
+        // Out of range is out of range, in every state. Without this check a
+        // wounded thrower kept lobbing at a player who had long since run off.
+        if (Vector2.Distance(transform.position, playerPosition) > attackRange) { return; }
+
         if (!NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition)) { return; }
 
         nextAttackTime = Time.time + attackCooldown;
@@ -85,13 +96,16 @@ public class GrapeThrowerBrain : NpcBrain
     }
 
     // Hurt: open the distance right up rather than simply walking backwards.
+    // It still throws on the way out, but only while the player is inside the
+    // same range it would throw from anywhere else.
     protected override void Retreat(Vector2 playerPosition)
     {
         MoveAwayFrom(playerPosition);
+        TryThrow(playerPosition);
+    }
 
-        if (Vector2.Distance(transform.position, playerPosition) > preferredRange)
-        {
-            TryThrow(playerPosition);
-        }
+    public float AttackRange
+    {
+        get { return attackRange; }
     }
 }

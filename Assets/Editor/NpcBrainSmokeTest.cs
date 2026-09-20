@@ -20,6 +20,33 @@ public static class NpcBrainSmokeTest
 
     private static GrapeThrowerBrain grape;
     private static GhostAmbusherBrain ghost;
+    private static GhostAmbusherBrain shotGhost;
+    private static Vector2 ghostRestingPlace;
+    private static bool sampling;
+    private static float closestAfterFlee;
+    private static bool measuringDrift;
+    private static float ghostPathLength;
+    private static Vector2 lastSampledGhostPosition;
+
+    private static void SampleGhostDistance()
+    {
+        PlayerController player = PlayerController.Instance;
+        if (ghost == null || player == null) { return; }
+
+        float distance = Vector2.Distance(ghost.transform.position, player.transform.position);
+        if (distance < closestAfterFlee) { closestAfterFlee = distance; }
+    }
+
+    // How far it actually walked, not how far it ended up from where it began:
+    // a wanderer that loops back looks stationary by the second measure.
+    private static void SampleGhostPath()
+    {
+        if (ghost == null) { return; }
+
+        Vector2 position = ghost.transform.position;
+        ghostPathLength += Vector2.Distance(position, lastSampledGhostPosition);
+        lastSampledGhostPosition = position;
+    }
     private static float distanceWhenCrowded;
     private static int throwsAtRange;
 
@@ -59,6 +86,13 @@ public static class NpcBrainSmokeTest
         if (!EditorApplication.isPlaying) { return; }
 
         frames++;
+
+        // Sampled every frame, not once at the end: the ghost blinks in, and
+        // then carries on with its own business, so a single reading taken
+        // later says nothing about whether the blink landed near the player.
+        if (sampling) { SampleGhostDistance(); }
+        if (measuringDrift) { SampleGhostPath(); }
+
         if (Time.time < waitUntil) { return; }
 
         if (ghostRun) { TickGhost(); }
@@ -87,6 +121,8 @@ public static class NpcBrainSmokeTest
             case 4: CheckGrapeThrows(); step++; Wait(0.2f); break;
             case 5: HideFromGrape(); step++; Wait(2.5f); break;
             case 6: CheckGrapeHeldFire(); step++; break;
+            case 7: WoundGrapeAndRunAway(); step++; Wait(3f); break;
+            case 8: CheckWoundedGrapeHeldFire(); step++; break;
 
             default: Finish("THROWER"); break;
         }
@@ -160,6 +196,39 @@ public static class NpcBrainSmokeTest
         Expect(grape.State != NpcBrain.BrainState.Engage, "it stops engaging once the player is gone");
     }
 
+    // A wounded thrower used to keep lobbing at a player who had run off: it
+    // was in its retreat state, and that state threw at any distance at all.
+    private static void WoundGrapeAndRunAway()
+    {
+        PlayerController player = PlayerController.Instance;
+        if (player == null || grape == null) { return; }
+
+        // Back in view and in range first, so it is properly engaged.
+        player.transform.position = grape.transform.position + new Vector3(3f, 0f, 0f);
+
+        EnemyHealth health = grape.GetComponent<EnemyHealth>();
+        if (health != null) { health.TakeDamage(1); }
+
+        // Now sprint well past its throwing range but stay in the open.
+        player.transform.position = grape.transform.position + new Vector3(9f, 0f, 0f);
+
+        throwsAtRange = grape.ThrowsMade;
+    }
+
+    private static void CheckWoundedGrapeHeldFire()
+    {
+        PlayerController player = PlayerController.Instance;
+        if (grape == null || player == null) { return; }
+
+        float distance = Vector2.Distance(grape.transform.position, player.transform.position);
+
+        Report.AppendLine("  wounded, player " + distance.ToString("0.0") + " away, state " + grape.State +
+                          ", throws " + throwsAtRange + " -> " + grape.ThrowsMade);
+
+        Expect(distance > grape.AttackRange, "the player really is out of its range");
+        Expect(grape.ThrowsMade == throwsAtRange, "a wounded thrower does not throw across the map");
+    }
+
     // ----- the ambusher ---------------------------------------------------
 
     private static void TickGhost()
@@ -172,11 +241,14 @@ public static class NpcBrainSmokeTest
                 break;
 
             case 1: FindGhost(); step++; Wait(0.2f); break;
-            case 2: CheckGhostDormant(); step++; break;
-            case 3: WalkIntoAmbush(); step++; Wait(1f); break;
-            case 4: CheckGhostSprang(); step++; break;
-            case 5: RunFromGhost(); step++; Wait(1.5f); break;
-            case 6: CheckGhostBlinked(); step++; break;
+            case 2: NoteGhostRestingPlace(); step++; Wait(2f); break;
+            case 3: CheckGhostDrifts(); step++; break;
+            case 4: ShootTheOtherGhost(); step++; Wait(1.2f); break;
+            case 5: CheckShotGhostWokeUp(); step++; break;
+            case 6: WalkIntoAmbush(); step++; Wait(1f); break;
+            case 7: CheckGhostSprang(); step++; break;
+            case 8: RunFromGhost(); step++; Wait(2.5f); break;
+            case 9: CheckGhostBlinked(); step++; break;
 
             default: Finish("AMBUSHER"); break;
         }
@@ -208,22 +280,84 @@ public static class NpcBrainSmokeTest
             }
         }
 
+        // A second one, far from the first, for the "shot from out of sight"
+        // check - so waking it cannot disturb the ambush test.
+        shotGhost = null;
+        float bestSeparation = 4f;
+
+        for (int i = 0; i < brains.Length; i++)
+        {
+            if (brains[i] == ghost) { continue; }
+
+            float separation = Vector2.Distance(brains[i].transform.position, ghost.transform.position);
+            if (separation > bestSeparation)
+            {
+                bestSeparation = separation;
+                shotGhost = brains[i];
+            }
+        }
+
         EnemyAI legacy = ghost.GetComponent<EnemyAI>();
         Expect(legacy == null || !legacy.enabled, "the old EnemyAI is switched off");
     }
 
-    private static void CheckGhostDormant()
+    private static void NoteGhostRestingPlace()
     {
         if (ghost == null) { return; }
 
+        ghostRestingPlace = ghost.transform.position;
+        lastSampledGhostPosition = ghostRestingPlace;
+        ghostPathLength = 0f;
+        measuringDrift = true;
+    }
+
+    // It should be drifting around its haunt, not standing perfectly still:
+    // a motionless enemy reads as a broken one.
+    private static void CheckGhostDrifts()
+    {
+        if (ghost == null) { return; }
+
+        measuringDrift = false;
+
         SpriteRenderer body = ghost.GetComponent<SpriteRenderer>();
+        float netDrift = Vector2.Distance(ghost.transform.position, ghostRestingPlace);
 
         Report.AppendLine("  waiting ghost: state " + ghost.State +
                           ", materialised " + ghost.Materialised +
-                          ", alpha " + (body != null ? body.color.a.ToString("0.00") : "n/a"));
+                          ", alpha " + (body != null ? body.color.a.ToString("0.00") : "n/a") +
+                          ", walked " + ghostPathLength.ToString("0.00") +
+                          " (ended " + netDrift.ToString("0.00") + " from where it started)");
 
         Expect(!ghost.Materialised, "an ambusher waits unseen until the player is close");
-        Expect(body == null || body.color.a < 0.6f, "it sits faded out while it waits");
+        Expect(body == null || body.color.a < 0.6f, "it waits half faded");
+        Expect(ghostPathLength > 0.5f, "it wanders its haunt while it waits");
+    }
+
+    // Shot from outside its ambush range: it must not simply stand there.
+    private static void ShootTheOtherGhost()
+    {
+        PlayerController player = PlayerController.Instance;
+        if (player == null || shotGhost == null) { return; }
+
+        player.transform.position = shotGhost.transform.position + new Vector3(9f, 0f, 0f);
+
+        EnemyHealth health = shotGhost.GetComponent<EnemyHealth>();
+        if (health != null) { health.TakeDamage(1); }
+    }
+
+    private static void CheckShotGhostWokeUp()
+    {
+        if (shotGhost == null)
+        {
+            Report.AppendLine("  only one ghost in the level; the shot test was skipped");
+            return;
+        }
+
+        Report.AppendLine("  ghost shot from 9 away: state " + shotGhost.State +
+                          ", materialised " + shotGhost.Materialised);
+
+        Expect(shotGhost.State != NpcBrain.BrainState.Patrol, "being shot wakes an NPC that never saw it coming");
+        Expect(shotGhost.Materialised, "a ghost hit from out of sight shows itself");
     }
 
     private static void WalkIntoAmbush()
@@ -248,13 +382,33 @@ public static class NpcBrainSmokeTest
         Expect(ghost.State == NpcBrain.BrainState.Engage, "it engages once it has sprung");
     }
 
-    // Break away: the ghost should reappear rather than follow on foot.
+    // Break away properly: far enough that it could not walk the distance in
+    // the time, and to a spot in the open with a clear line back to the ghost,
+    // so the test is not at the mercy of wherever the ghost had wandered.
     private static void RunFromGhost()
     {
         PlayerController player = PlayerController.Instance;
         if (player == null || ghost == null) { return; }
 
-        player.transform.position = ghost.transform.position + new Vector3(7f, 0f, 0f);
+        Vector2 origin = ghost.transform.position;
+        Vector2 spot = origin + Vector2.right * 9f;
+
+        for (int i = 0; i < 12; i++)
+        {
+            Vector2 candidate = origin + NpcSenses.Rotate(Vector2.right, i * 30f) * 9f;
+
+            if (!NpcSenses.IsFree(player.gameObject, candidate, 0.5f)) { continue; }
+            if (!NpcSenses.HasLineOfSight(ghost.gameObject, origin, candidate)) { continue; }
+
+            spot = candidate;
+            break;
+        }
+
+        player.transform.position = spot;
+        Report.AppendLine("  player fled to " + Vector2.Distance(origin, spot).ToString("0.0") + " away");
+
+        closestAfterFlee = float.MaxValue;
+        sampling = true;
     }
 
     private static void CheckGhostBlinked()
@@ -264,10 +418,13 @@ public static class NpcBrainSmokeTest
 
         float distance = Vector2.Distance(ghost.transform.position, player.transform.position);
 
-        Report.AppendLine("  blinks: " + ghost.Blinks + ", distance to player now " + distance.ToString("0.00"));
+        sampling = false;
+
+        Report.AppendLine("  blinks: " + ghost.Blinks + ", closest it got: " + closestAfterFlee.ToString("0.00") +
+                          ", distance now " + distance.ToString("0.00") + ", state " + ghost.State);
 
         Expect(ghost.Blinks > 0, "it blinks after the player instead of walking");
-        Expect(distance < 5f, "the blink puts it back within reach");
+        Expect(closestAfterFlee < 5f, "the blink puts it back within reach");
     }
 
     // ----- plumbing -------------------------------------------------------
