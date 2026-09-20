@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 8250933536699800757}
   - component: {fileID: 518505271126954007}
   - component: {fileID: 9159572389383203359}
+  - component: {fileID: 7947976955722195545}
   m_Layer: 0
   m_Name: Enemie1
   m_TagString: Untagged
@@ -41,7 +42,7 @@ Transform:
   m_Children:
   - {fileID: 5305998724471380917}
   m_Father: {fileID: 0}
-  m_RootOrder: -1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &6288083560203831410
 SpriteRenderer:
@@ -164,7 +165,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5694839370108861343}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fdea7846ed3a8e248ad1c3d7be4b9d45, type: 3}
   m_Name: 
@@ -223,6 +224,7 @@ MonoBehaviour:
   startingHealth: 3
   deathVFXPrefab: {fileID: 3219800433436933769, guid: acc489d8bed211b4bab6619db0f2851b, type: 3}
   knockBackThrust: 15
+  countsTowardObjective: 1
 --- !u!114 &6171317052573958698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,6 +280,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grapeProjectilePrefab: {fileID: 4636743569137906123, guid: 357eecee519d7224d820b9d1218061ca, type: 3}
+--- !u!114 &7947976955722195545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5694839370108861343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56d4e4681f7199f43971f8de62311a12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sightRange: 7
+  hearingRange: 10
+  memoryDuration: 4
+  patrolRadius: 2.5
+  retreatHealthFraction: 0.34
+  retreatDuration: 3
+  preferredRange: 4.2
+  tooCloseRange: 2.6
+  attackCooldown: 2
+  strafeInterval: 1.5
 --- !u!1 &7080490757272680353
 GameObject:
   m_ObjectHideFlags: 0

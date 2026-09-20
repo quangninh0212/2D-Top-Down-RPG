@@ -226,9 +226,15 @@ public class MainMenu : MonoBehaviour
                                            new Vector2(0f, top - gap), OnContinue);
 
         PixelUI.NewButton("Shop", group.transform, "CỬA HÀNG", size, new Vector2(0f, top - gap * 2f), () => shop.Open());
-        PixelUI.NewButton("Guide", group.transform, "HƯỚNG DẪN", size, new Vector2(0f, top - gap * 3f), () => guide.Open());
-        PixelUI.NewButton("Settings", group.transform, "CÀI ĐẶT", size, new Vector2(0f, top - gap * 4f), () => settings.Open());
-        PixelUI.NewButton("Quit", group.transform, "THOÁT GAME", size, new Vector2(0f, top - gap * 5f), OnQuit);
+
+        // The progress screen is a scene of its own, so it is entered rather
+        // than opened over the menu like the shop and the guide.
+        PixelUI.NewButton("Progress", group.transform, "TIẾN TRÌNH", size, new Vector2(0f, top - gap * 3f),
+                          () => SceneFlow.GoToScreen(GameScenes.Progress, GameScenes.MainMenu));
+
+        PixelUI.NewButton("Guide", group.transform, "HƯỚNG DẪN", size, new Vector2(0f, top - gap * 4f), () => guide.Open());
+        PixelUI.NewButton("Settings", group.transform, "CÀI ĐẶT", size, new Vector2(0f, top - gap * 5f), () => settings.Open());
+        PixelUI.NewButton("Quit", group.transform, "THOÁT GAME", size, new Vector2(0f, top - gap * 6f), OnQuit);
 
         return group;
     }

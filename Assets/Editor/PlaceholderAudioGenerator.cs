@@ -67,6 +67,13 @@ public static class PlaceholderAudioGenerator
         Write(SfxFolder, GameSfx.TrapHit.ToString(), Thud(140f, 0.2f));
         Write(SfxFolder, GameSfx.SpeedUp.ToString(), Sweep(400f, 1600f, 0.22f));
         Write(SfxFolder, GameSfx.Explosion.ToString(), NoiseBurst(0.5f, 0.45f));
+
+        // A falling minor arpeggio: the sting under the game over screen.
+        Write(SfxFolder, GameSfx.GameOver.ToString(), Arpeggio(new[] { 392f, 311f, 262f, 196f }, 1.2f));
+
+        // Short and dry, so a pack of enemies spotting the player at once does
+        // not turn into a wall of noise.
+        Write(SfxFolder, GameSfx.NpcAlert.ToString(), Blip(880f, 0.07f, 0.18f));
     }
 
     private static float[] Blip(float frequency, float duration, float volume)

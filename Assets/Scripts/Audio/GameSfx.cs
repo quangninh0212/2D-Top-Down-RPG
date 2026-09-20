@@ -30,7 +30,11 @@ public enum GameSfx
     ChestOpen,
     TrapHit,
     SpeedUp,
-    Explosion
+    Explosion,
+
+    // Added with the game over and win screens and the NPC brains.
+    GameOver,
+    NpcAlert
 }
 
 public enum GameMusic

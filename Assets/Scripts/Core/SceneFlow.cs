@@ -73,6 +73,34 @@ public static class SceneFlow
         SceneManager.LoadScene(GameScenes.Victory);
     }
 
+    // Where a screen's back button leads. Stored rather than inferred: the same
+    // progress screen is opened from the menu, from game over and from victory,
+    // and each of those wants the player handed back to where they came from.
+    public static string ScreenReturnScene { get; private set; } = GameScenes.MainMenu;
+
+    public static void GoToScreen(string screenName, string returnScene)
+    {
+        if (string.IsNullOrEmpty(screenName)) { return; }
+
+        // Gameplay is never a safe place to come back to: the run that was
+        // being played has already ended by the time a screen is opened.
+        ScreenReturnScene = string.IsNullOrEmpty(returnScene) || GameScenes.IsGameplayScene(returnScene)
+            ? GameScenes.MainMenu
+            : returnScene;
+
+        LeaveGameplay();
+        SceneManager.LoadScene(screenName);
+    }
+
+    public static void ReturnFromScreen()
+    {
+        string target = ScreenReturnScene;
+        ScreenReturnScene = GameScenes.MainMenu;
+
+        ResetTimeScale();
+        SceneManager.LoadScene(string.IsNullOrEmpty(target) ? GameScenes.MainMenu : target);
+    }
+
     // The player, the gameplay canvas and the managers all live in
     // DontDestroyOnLoad so they can walk between levels. Leaving gameplay has to
     // clear them out, or the menu would end up with a controllable player

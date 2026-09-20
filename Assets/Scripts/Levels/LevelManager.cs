@@ -46,6 +46,10 @@ public class LevelManager : MonoBehaviour
     {
         Instance = this;
         hasInfo = LevelCatalog.TryGet(gameObject.scene.name, out info);
+
+        // Sightings and flank slots belong to one room; carrying them across a
+        // load would have the next level's enemies act on the last one's news.
+        NpcAlertNetwork.Reset();
     }
 
     private void OnDestroy()
@@ -263,6 +267,10 @@ public class LevelManager : MonoBehaviour
         if (state.rewardClaimed) { return; }
         state.rewardClaimed = true;
 
+        // History outlives the run file: this is what the progress screen reads
+        // after the run has been lost, won or deleted.
+        ProfileStats.RecordLevelCleared(info.Number, save.Data.playTime);
+
         if (info.RewardGold > 0 && EconomyManager.Instance != null)
         {
             EconomyManager.Instance.AddGold(info.RewardGold);
@@ -336,6 +344,15 @@ public class LevelManager : MonoBehaviour
         {
             state.completed = true;
             state.gateOpen = true;
+        }
+
+        // The boss room never opens a gate, so it would otherwise be the one
+        // level that never made it into the history.
+        GameSaveManager save = GameSaveManager.Instance;
+        if (hasInfo && save != null && state != null && !state.rewardClaimed)
+        {
+            state.rewardClaimed = true;
+            ProfileStats.RecordLevelCleared(info.Number, save.Data.playTime);
         }
     }
 }

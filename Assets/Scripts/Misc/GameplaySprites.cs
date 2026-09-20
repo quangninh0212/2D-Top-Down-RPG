@@ -14,6 +14,7 @@ public static class GameplaySprites
     private static Sprite spikesDown;
     private static Sprite spikesUp;
     private static Sprite hazardZone;
+    private static Sprite alert;
     private static Sprite speakerOn;
     private static Sprite speakerOff;
     private static Sprite musicOn;
@@ -46,6 +47,13 @@ public static class GameplaySprites
     public static Sprite HazardZone
     {
         get { return hazardZone != null ? hazardZone : (hazardZone = BuildHazardZone()); }
+    }
+
+    // The "!" an NPC shows the moment it notices the player, so its state is
+    // readable on screen instead of only in the code.
+    public static Sprite Alert
+    {
+        get { return alert != null ? alert : (alert = BuildAlert()); }
     }
 
     // ----- HUD icons ------------------------------------------------------
@@ -307,6 +315,23 @@ public static class GameplaySprites
     }
 
     // ----- primitives -----------------------------------------------------
+
+    // A fat exclamation mark with a dark outline, so it reads over any tile.
+    private static Sprite BuildAlert()
+    {
+        const int size = 32;
+        Color[] pixels = Blank(size);
+
+        Color body = new Color(1f, 0.85f, 0.25f, 1f);
+        Color edge = new Color(0.12f, 0.08f, 0.04f, 1f);
+
+        FillRect(pixels, size, 11, 6, 20, 31, edge);
+        FillRect(pixels, size, 13, 22, 18, 29, body);
+        FillRect(pixels, size, 13, 12, 18, 20, body);
+        FillRect(pixels, size, 13, 8, 18, 10, body);
+
+        return Finish(pixels, size, size, 48f);
+    }
 
     private static Color[] Blank(int size)
     {

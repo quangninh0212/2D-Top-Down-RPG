@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -7,6 +8,10 @@ using UnityEngine;
 public class VictorySequence : MonoBehaviour
 {
     private const float DelayBeforeVictory = 2.2f;
+
+    // Raised the instant the run is won, while the gameplay screen is still up,
+    // so the overlay can celebrate there rather than only on the next scene.
+    public static event Action OnVictoryBegan;
 
     private static bool running;
 
@@ -18,13 +23,15 @@ public class VictorySequence : MonoBehaviour
         GameObject go = new GameObject("VictorySequence");
         DontDestroyOnLoad(go);
         go.AddComponent<VictorySequence>();
+
+        AudioManager.PlaySfx(GameSfx.Victory);
+        OnVictoryBegan?.Invoke();
     }
 
     private IEnumerator Start()
     {
+        // The fanfare already played in Begin, with the overlay.
         yield return new WaitForSeconds(DelayBeforeVictory);
-
-        AudioManager.PlaySfx(GameSfx.Victory);
 
         GameSaveManager save = GameSaveManager.Instance;
         if (save != null)

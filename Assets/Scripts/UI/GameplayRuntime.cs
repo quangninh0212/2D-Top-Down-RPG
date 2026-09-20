@@ -37,6 +37,7 @@ public class GameplayRuntime : MonoBehaviour
 
     private PauseMenuUI pauseMenu;
     private GameOverUI gameOver;
+    private WinOverlayUI winOverlay;
     private BossHealthBarUI bossBar;
 
     // Sound and music switches. Each pair shares one position and one size;
@@ -106,6 +107,7 @@ public class GameplayRuntime : MonoBehaviour
         ActiveInventory.OnWeaponChanged += OnWeaponChanged;
         GameSaveManager.OnGoldOrProgressChanged += RefreshWeaponSlots;
         PlayerHealth.OnPlayerDied += OnPlayerDied;
+        VictorySequence.OnVictoryBegan += OnVictoryBegan;
         AudioToggles.Changed += RefreshAudioToggles;
     }
 
@@ -117,6 +119,7 @@ public class GameplayRuntime : MonoBehaviour
         ActiveInventory.OnWeaponChanged -= OnWeaponChanged;
         GameSaveManager.OnGoldOrProgressChanged -= RefreshWeaponSlots;
         PlayerHealth.OnPlayerDied -= OnPlayerDied;
+        VictorySequence.OnVictoryBegan -= OnVictoryBegan;
         AudioToggles.Changed -= RefreshAudioToggles;
     }
 
@@ -161,6 +164,7 @@ public class GameplayRuntime : MonoBehaviour
         {
             if (pauseMenu != null) { pauseMenu.Close(); }
             if (gameOver != null) { gameOver.Hide(); }
+            if (winOverlay != null) { winOverlay.Hide(); }
             HideBannerImmediately();
         }
 
@@ -243,6 +247,10 @@ public class GameplayRuntime : MonoBehaviour
         gameOver = new GameObject("GameOver", typeof(RectTransform)).AddComponent<GameOverUI>();
         gameOver.transform.SetParent(canvas.transform, false);
         gameOver.Build();
+
+        winOverlay = new GameObject("WinOverlay", typeof(RectTransform)).AddComponent<WinOverlayUI>();
+        winOverlay.transform.SetParent(canvas.transform, false);
+        winOverlay.Build();
     }
 
     private void BuildJoystick()
@@ -758,6 +766,24 @@ public class GameplayRuntime : MonoBehaviour
     private void OnPlayerDied()
     {
         if (gameOver != null) { gameOver.Show(); }
+    }
+
+    private void OnVictoryBegan()
+    {
+        // The touch controls have nothing left to do, and the celebration
+        // should not be played through a joystick.
+        if (controlsRoot != null) { controlsRoot.SetActive(false); }
+        if (winOverlay != null) { winOverlay.Show(); }
+    }
+
+    public WinOverlayUI WinOverlay
+    {
+        get { return winOverlay; }
+    }
+
+    public GameOverUI GameOver
+    {
+        get { return gameOver; }
     }
 
     public BossHealthBarUI BossBar

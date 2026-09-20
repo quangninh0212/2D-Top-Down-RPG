@@ -9,6 +9,12 @@ public static class GameScenes
     public const string Loading = "LoadingScene";
     public const string Victory = "VictoryScene";
 
+    // Stand-alone screens the game over and victory screens navigate to. Each
+    // one is a scene of its own, not a panel laid over what came before.
+    public const string Progress = "ProgressScene";
+    public const string Achievements = "AchievementsScene";
+    public const string Settings = "SettingsScene";
+
     public const string Scene1 = "Scene1";
     public const string Scene2 = "Scene2";
     public const string Scene3 = "Scene3";
@@ -19,10 +25,23 @@ public static class GameScenes
     // order written into Build Settings by the editor setup tool.
     public static readonly string[] BuildOrder =
     {
-        Splash, MainMenu, Loading, Scene1, Scene2, Scene3, Scene4, Scene5, Victory
+        Splash, MainMenu, Loading, Scene1, Scene2, Scene3, Scene4, Scene5, Victory,
+        Progress, Achievements, Settings
     };
 
     public static readonly string[] Levels = { Scene1, Scene2, Scene3, Scene4, Scene5 };
+
+    public static readonly string[] Screens = { Progress, Achievements, Settings };
+
+    public static bool IsScreen(string sceneName)
+    {
+        for (int i = 0; i < Screens.Length; i++)
+        {
+            if (string.Equals(Screens[i], sceneName, StringComparison.Ordinal)) { return true; }
+        }
+
+        return false;
+    }
 
     public static bool IsGameplayScene(string sceneName)
     {

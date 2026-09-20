@@ -49,6 +49,8 @@ public static class ProjectValidator
         ValidateEconomyRules(report, failures);
         ValidateWeaponUnlockRules(report, failures);
         ValidateGeneratedAssets(report, failures);
+        ValidateScreenScenes(report, failures);
+        ValidateNpcBrains(report, failures);
 
         foreach (Expectation expectation in Expected)
         {
@@ -71,6 +73,79 @@ public static class ProjectValidator
     }
 
     // ----- project-level checks ------------------------------------------
+
+    // The game over and victory screens hand the player to these, so a missing
+    // one is a dead button on a phone rather than an error anybody would see.
+    private static void ValidateScreenScenes(StringBuilder report, List<string> failures)
+    {
+        report.AppendLine();
+        report.AppendLine("Stand-alone screens:");
+
+        System.Type[] controllers =
+        {
+            typeof(ProgressScreenController),
+            typeof(AchievementsScreenController),
+            typeof(SettingsScreenController)
+        };
+
+        for (int i = 0; i < GameScenes.Screens.Length; i++)
+        {
+            string sceneName = GameScenes.Screens[i];
+            string path = "Assets/Scenes/" + sceneName + ".unity";
+
+            if (!File.Exists(path))
+            {
+                failures.Add("Screen scene missing: " + path);
+                report.AppendLine("  " + sceneName + ": MISSING");
+                continue;
+            }
+
+            Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+            bool hasController = Object.FindObjectOfType(controllers[i]) != null;
+
+            if (!hasController)
+            {
+                failures.Add(sceneName + " has no " + controllers[i].Name);
+            }
+
+            report.AppendLine("  " + sceneName + ": " + (hasController ? "ok" : "no controller") +
+                              " (" + scene.rootCount + " root object(s))");
+        }
+    }
+
+    // Each enemy type needs its brain, or it falls back to wandering at random.
+    private static void ValidateNpcBrains(StringBuilder report, List<string> failures)
+    {
+        report.AppendLine();
+        report.AppendLine("NPC brains:");
+
+        CheckBrain<SlimePackBrain>("Assets/Prefabs/Enemies/Blue Slime.prefab", report, failures);
+        CheckBrain<GrapeThrowerBrain>("Assets/Prefabs/Enemies/Enemie1.prefab", report, failures);
+        CheckBrain<GhostAmbusherBrain>("Assets/Prefabs/Enemies/Ghost.prefab", report, failures);
+    }
+
+    private static void CheckBrain<T>(string prefabPath, StringBuilder report, List<string> failures)
+        where T : NpcBrain
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+
+        if (prefab == null)
+        {
+            failures.Add("Enemy prefab missing: " + prefabPath);
+            return;
+        }
+
+        bool hasBrain = prefab.GetComponent<T>() != null;
+        EnemyAI legacy = prefab.GetComponent<EnemyAI>();
+        bool legacyOff = legacy == null || !legacy.enabled;
+
+        if (!hasBrain) { failures.Add(Path.GetFileNameWithoutExtension(prefabPath) + " has no " + typeof(T).Name); }
+        if (!legacyOff) { failures.Add(Path.GetFileNameWithoutExtension(prefabPath) + " still runs the old EnemyAI"); }
+
+        report.AppendLine("  " + Path.GetFileNameWithoutExtension(prefabPath) + ": " +
+                          (hasBrain ? typeof(T).Name : "NO BRAIN") +
+                          (legacyOff ? ", old AI off" : ", OLD AI STILL ON"));
+    }
 
     private static void ValidateBuildSettings(StringBuilder report, List<string> failures)
     {

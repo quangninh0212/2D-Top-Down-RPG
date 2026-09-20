@@ -1,0 +1,171 @@
+using UnityEngine;
+
+// NPC 3 - Ghost: an ambusher.
+//
+// It does not patrol and it does not chase across the map. It hangs half
+// faded where it is until the player walks into its reach, then materialises
+// and opens fire. If the player runs, or breaks the line with a wall, it
+// blinks out and reappears behind them instead of trailing along in the open.
+public class GhostAmbusherBrain : NpcBrain
+{
+    [SerializeField] private float ambushRange = 5f;
+    [SerializeField] private float standOffRange = 3.6f;
+    [SerializeField] private float attackCooldown = 2.4f;
+    [SerializeField] private float blinkCooldown = 7f;
+    [SerializeField] private float blinkTriggerRange = 4.6f;
+    [SerializeField] private float blinkBehindDistance = 2.2f;
+
+    private const float DormantAlpha = 0.35f;
+
+    private IEnemy weapon;
+    private float nextAttackTime;
+    private float nextBlinkTime;
+    private bool materialised;
+
+    public int Blinks { get; private set; }
+
+    public bool Materialised
+    {
+        get { return materialised; }
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+        weapon = GetComponent<IEnemy>();
+    }
+
+    protected override void Start()
+    {
+        base.Start();
+        SetAlpha(DormantAlpha);
+    }
+
+    // It only "sees" what walks into its ambush; the rest of the room could be
+    // in plain view and it would not stir.
+    protected override bool CanSee(Vector2 playerPosition)
+    {
+        if (Vector2.Distance(transform.position, playerPosition) > ambushRange) { return false; }
+
+        return NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+    }
+
+    protected override void NoticePlayer(Vector2 playerPosition)
+    {
+        Materialise();
+        base.NoticePlayer(playerPosition);
+    }
+
+    // Waiting, not wandering: an ambusher that drifts around is just a slow
+    // shooter.
+    protected override void Patrol()
+    {
+        Hold();
+    }
+
+    // It lost the player. Rather than jog after them in the open, it steps
+    // through and comes out at their back - which is how it gets a second
+    // ambush out of the same encounter.
+    protected override void Investigate(Vector2 target)
+    {
+        PlayerController player = PlayerController.Instance;
+        Vector2 hunted = player != null ? (Vector2)player.transform.position : target;
+
+        if (TryBlinkBehind(hunted)) { return; }
+
+        base.Investigate(target);
+    }
+
+    protected override void Engage(Vector2 playerPosition, float distance)
+    {
+        bool clearLine = NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+
+        // Too far, or cut off: reappear behind the player rather than walk.
+        if ((distance > blinkTriggerRange || !clearLine) && TryBlinkBehind(playerPosition)) { return; }
+
+        if (distance < standOffRange - 0.6f)
+        {
+            MoveAwayFrom(playerPosition);
+        }
+        else if (distance > standOffRange + 0.6f)
+        {
+            MoveTowards(playerPosition);
+        }
+        else
+        {
+            Hold();
+        }
+
+        if (clearLine) { TryShoot(); }
+    }
+
+    private void TryShoot()
+    {
+        if (weapon == null || Time.time < nextAttackTime) { return; }
+
+        nextAttackTime = Time.time + attackCooldown;
+        weapon.Attack();
+    }
+
+    // Steps out of the world and back in at the player's back. The spot has to
+    // be clear, so it never lands inside a wall; if none of the candidates
+    // work, the blink simply does not happen.
+    private bool TryBlinkBehind(Vector2 playerPosition)
+    {
+        if (Time.time < nextBlinkTime) { return false; }
+
+        PlayerController player = PlayerController.Instance;
+        Vector2 facing = player != null && player.MoveDirection.sqrMagnitude > 0.01f
+            ? player.MoveDirection.normalized
+            : ((Vector2)transform.position - playerPosition).normalized;
+
+        for (int attempt = 0; attempt < 6; attempt++)
+        {
+            Vector2 direction = NpcSenses.Rotate(-facing, attempt * 60f);
+            Vector2 candidate = playerPosition + direction * blinkBehindDistance;
+
+            if (!NpcSenses.IsFree(gameObject, candidate, 0.35f)) { continue; }
+            if (!NpcSenses.HasLineOfSight(gameObject, candidate, playerPosition)) { continue; }
+
+            nextBlinkTime = Time.time + blinkCooldown;
+            Blinks++;
+
+            ExpandingRing.Spawn(transform.position, new Color(0.6f, 0.5f, 0.95f, 0.8f), 1.4f, 0.3f);
+            transform.position = candidate;
+            ExpandingRing.Spawn(candidate, new Color(0.6f, 0.5f, 0.95f, 0.8f), 1.4f, 0.3f);
+
+            AudioManager.PlaySfx(GameSfx.Dash);
+            Hold();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    // Hurt: fades most of the way out and drifts off, which makes it hard to
+    // finish but also stops it shooting.
+    protected override void OnRetreatBegan()
+    {
+        SetAlpha(DormantAlpha);
+    }
+
+    protected override void OnRetreatEnded()
+    {
+        Materialise();
+    }
+
+    private void Materialise()
+    {
+        materialised = true;
+        SetAlpha(1f);
+    }
+
+    private void SetAlpha(float alpha)
+    {
+        if (body == null) { return; }
+
+        Color colour = body.color;
+        body.color = new Color(colour.r, colour.g, colour.b, alpha);
+    }
+}

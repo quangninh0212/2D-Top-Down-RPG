@@ -105,6 +105,7 @@ GameObject:
   - component: {fileID: 8030435319850658012}
   - component: {fileID: 6609587027431479852}
   - component: {fileID: 8602486883711707233}
+  - component: {fileID: 4917290582415471313}
   m_Layer: 0
   m_Name: Ghost
   m_TagString: Untagged
@@ -126,7 +127,7 @@ Transform:
   m_Children:
   - {fileID: 2779355183383601202}
   m_Father: {fileID: 0}
-  m_RootOrder: -1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &6079120127393258685
 SpriteRenderer:
@@ -249,7 +250,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8309201439747419617}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fdea7846ed3a8e248ad1c3d7be4b9d45, type: 3}
   m_Name: 
@@ -376,3 +377,27 @@ MonoBehaviour:
   goldCoin: {fileID: 4365775749488099736, guid: be3693e822d1d4d468067696a7824314, type: 3}
   healthGlobe: {fileID: 4365775749488099736, guid: 7e8c3dd90a5a6564da8d6f9635312edd, type: 3}
   staminaGlobe: {fileID: 4365775749488099736, guid: d9bde78e513af95468371b93d3240a6b, type: 3}
+--- !u!114 &4917290582415471313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8309201439747419617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8d9a2fa86a22f844ab1b7119610080d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sightRange: 7
+  hearingRange: 10
+  memoryDuration: 4
+  patrolRadius: 2.5
+  retreatHealthFraction: 0.34
+  retreatDuration: 3
+  ambushRange: 5
+  standOffRange: 3.6
+  attackCooldown: 2.4
+  blinkCooldown: 7
+  blinkTriggerRange: 6.5
+  blinkBehindDistance: 2.2

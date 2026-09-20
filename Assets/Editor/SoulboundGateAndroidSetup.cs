@@ -22,6 +22,7 @@ public static class SoulboundGateAndroidSetup
 
         GenerateContentAssets();
         ConfigureWeaponInventory();
+        NpcBrainInstaller.InstallAll();
         // The HUD layout is applied at runtime by HudLayout: the scenes override
         // the prefab, so editing the prefab alone would not take effect.
 

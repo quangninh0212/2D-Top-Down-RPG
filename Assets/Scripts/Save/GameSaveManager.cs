@@ -105,6 +105,11 @@ public class GameSaveManager : MonoBehaviour
         runLoaded = false;
         SaveSystem.Delete();
         Data.runActive = false;
+
+        // The run file goes, but the history does not: the progress screen is
+        // built out of finished runs, lost ones included.
+        ProfileStats.RecordDeath(GameScenes.LevelNumberOf(Data.currentScene), Data.gold, Data.playTime);
+
         RaiseChanged();
     }
 

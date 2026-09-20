@@ -61,6 +61,8 @@ public static class LevelSceneBuilder
         BuildSimpleScene(GameScenes.Splash, "SplashScreen", typeof(SplashScreenController));
         BuildSimpleScene(GameScenes.Loading, "LoadingScreen", typeof(LoadingScreenController));
         BuildSimpleScene(GameScenes.Victory, "VictoryScreen", typeof(VictoryScreenController));
+
+        EnsureScreenScenes();
         EnsureMainMenuScene();
     }
 
@@ -152,6 +154,38 @@ public static class LevelSceneBuilder
 
         EditorSceneManager.SaveScene(scene, path);
         SoulboundSetupLog.Step("Scene " + sceneName + " ready.");
+    }
+
+    // The three stand-alone screens. Each holds nothing but its controller, and
+    // an existing one is left alone: rebuilding it would churn its file for no
+    // reason, exactly as rebuilding a level would.
+    [MenuItem("Tools/Soulbound Gate/Steps/Build Screen Scenes")]
+    public static void EnsureScreenScenes()
+    {
+        EnsureSimpleScene(GameScenes.Progress, "ProgressScreen", typeof(ProgressScreenController));
+        EnsureSimpleScene(GameScenes.Achievements, "AchievementsScreen", typeof(AchievementsScreenController));
+        EnsureSimpleScene(GameScenes.Settings, "SettingsScreen", typeof(SettingsScreenController));
+    }
+
+    private static void EnsureSimpleScene(string sceneName, string objectName, System.Type controller)
+    {
+        string path = ScenesFolder + "/" + sceneName + ".unity";
+
+        if (!File.Exists(path))
+        {
+            BuildSimpleScene(sceneName, objectName, controller);
+            return;
+        }
+
+        Scene existing = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+
+        if (Object.FindObjectOfType(controller) == null)
+        {
+            new GameObject(objectName).AddComponent(controller);
+            EditorSceneManager.SaveScene(existing, path);
+        }
+
+        SoulboundSetupLog.Step("Scene " + sceneName + " verified.");
     }
 
     private static void EnsureMainMenuScene()

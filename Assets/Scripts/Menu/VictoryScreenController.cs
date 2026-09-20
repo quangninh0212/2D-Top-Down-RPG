@@ -47,21 +47,49 @@ public class VictoryScreenController : MonoBehaviour
 
         SaveData data = GameSaveManager.Instance != null ? GameSaveManager.Instance.Data : new SaveData();
 
+        // Coming back from the achievements or progress screen rebuilds this
+        // one from scratch, and a cold boot into it has no run in memory at
+        // all. The recorded run then stands in for the live numbers.
+        int gold = data.playTime > 0f ? data.gold : ProfileStats.LastGold;
+        float playTime = data.playTime > 0f ? data.playTime : ProfileStats.LastTime;
+
         RectTransform panel = PixelUI.NewPanel("Stats", safeArea, new Vector2(860f, 300f));
         ((RectTransform)panel.parent).anchoredPosition = new Vector2(0f, -10f);
 
-        AddRow(panel, "Tổng vàng thu được", data.gold.ToString(), 96f);
-        AddRow(panel, "Thời gian hoàn thành", ProfileStats.FormatTime(data.playTime), 32f);
+        AddRow(panel, "Tổng vàng thu được", gold.ToString(), 96f);
+        AddRow(panel, "Thời gian hoàn thành", ProfileStats.FormatTime(playTime), 32f);
         AddRow(panel, "Thời gian tốt nhất",
                ProfileStats.HasBestTime ? ProfileStats.FormatTime(ProfileStats.BestTime) : "--:--", -32f);
         AddRow(panel, "Vàng cao nhất", ProfileStats.BestGold.ToString(), -96f);
 
-        PixelUI.NewButton("Replay", safeArea, "CHƠI LẠI", new Vector2(430f, 94f), new Vector2(-240f, -290f),
+        BuildButtons(safeArea);
+    }
+
+    // Four ways out, two rows of two. Replay and Home start something new; the
+    // other two open a screen of their own and come back here afterwards.
+    private static void BuildButtons(RectTransform safeArea)
+    {
+        Vector2 size = new Vector2(430f, 94f);
+
+        PixelUI.NewButton("Replay", safeArea, "CHƠI LẠI", size, new Vector2(-240f, -270f),
             () => SceneFlow.RestartFromScratch());
 
-        PixelUI.NewButton("Home", safeArea, "TRANG CHỦ", new Vector2(430f, 94f), new Vector2(240f, -290f),
+        PixelUI.NewButton("Home", safeArea, "TRANG CHỦ", size, new Vector2(240f, -270f),
             () => SceneFlow.GoToMainMenu());
+
+        PixelUI.NewButton("Achievements", safeArea, "THÀNH TÍCH", size, new Vector2(-240f, -380f),
+            () => SceneFlow.GoToScreen(GameScenes.Achievements, GameScenes.Victory));
+
+        PixelUI.NewButton("Progress", safeArea, "TIẾN TRÌNH", size, new Vector2(240f, -380f),
+            () => SceneFlow.GoToScreen(GameScenes.Progress, GameScenes.Victory));
     }
+
+    // The screens this one leads to, in layout order. The smoke test reads this
+    // so a lost destination cannot pass unnoticed.
+    public static readonly string[] Destinations =
+    {
+        GameScenes.Scene1, GameScenes.MainMenu, GameScenes.Achievements, GameScenes.Progress
+    };
 
     private static void AddRow(Transform parent, string label, string value, float y)
     {
