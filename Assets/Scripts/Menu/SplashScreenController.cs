@@ -69,30 +69,35 @@ public class SplashScreenController : MonoBehaviour
         group = PixelUI.NewFullScreenGroup("Content", safeArea);
         group.blocksRaycasts = false;
 
-        // The player sprite, if the art library has been generated.
+        // The supplied key art carries this screen. The old procedural hero
+        // frame stands in only when the artwork is missing, so a clone without
+        // it still shows something.
         GameArtLibrary art = GameArtLibrary.Instance;
+        bool hasKeyArt = Branding.HasKeyArt;
 
-        Image portrait = PixelUI.NewImage("Hero", group.transform);
-        portrait.rectTransform.sizeDelta = new Vector2(190f, 190f);
-        portrait.rectTransform.anchoredPosition = new Vector2(0f, 170f);
+        Image portrait = PixelUI.NewImage("KeyArt", group.transform);
+        portrait.rectTransform.sizeDelta = hasKeyArt
+            ? new Vector2(430f, 430f)
+            : new Vector2(190f, 190f);
+        portrait.rectTransform.anchoredPosition = new Vector2(0f, hasKeyArt ? 110f : 170f);
         portrait.preserveAspect = true;
         portrait.raycastTarget = false;
-        portrait.sprite = art != null ? art.playerIdle : null;
+        portrait.sprite = hasKeyArt ? Branding.KeyArt : (art != null ? art.playerIdle : null);
         portrait.enabled = portrait.sprite != null;
         crest = portrait.rectTransform;
 
         Text title = PixelUI.NewTitle("Title", group.transform, "SOULBOUND GATE", 96);
         title.rectTransform.sizeDelta = new Vector2(1700f, 130f);
-        title.rectTransform.anchoredPosition = new Vector2(0f, -20f);
+        title.rectTransform.anchoredPosition = new Vector2(0f, hasKeyArt ? -180f : -20f);
 
         Text by = PixelUI.NewBody("DevelopedBy", group.transform, "Developed by", 30);
         by.rectTransform.sizeDelta = new Vector2(1200f, 50f);
-        by.rectTransform.anchoredPosition = new Vector2(0f, -130f);
+        by.rectTransform.anchoredPosition = new Vector2(0f, hasKeyArt ? -280f : -130f);
         by.color = PixelUI.Muted;
 
         Text names = PixelUI.NewBody("Names", group.transform, "Quang Ninh and Hong Phong", 42);
         names.rectTransform.sizeDelta = new Vector2(1400f, 60f);
-        names.rectTransform.anchoredPosition = new Vector2(0f, -185f);
+        names.rectTransform.anchoredPosition = new Vector2(0f, hasKeyArt ? -335f : -185f);
         names.color = PixelUI.Cream;
     }
 

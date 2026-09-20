@@ -133,7 +133,7 @@ public static class MenuSmokeTest
         ReportSprite(report, failures, "HeroPreview");
         ReportSprite(report, failures, "MonsterPreview");
 
-        ReportText(report, failures, "SOULBOUND GATE");
+        ReportTitle(report, failures);
 
         report.AppendLine();
         report.AppendLine(failures.Count == 0
@@ -236,6 +236,27 @@ public static class MenuSmokeTest
         report.AppendLine("  " + holderName + ": sprite=" + sprite + " animated=" + animated);
 
         if (image == null || image.sprite == null) { failures.Add(holderName + " has no sprite"); }
+    }
+
+    // The menu is titled by the supplied logo when the artwork is present, and
+    // by the old text line when it is not. Either satisfies the check; having
+    // neither means the menu has no name on it at all.
+    private static void ReportTitle(StringBuilder report, List<string> failures)
+    {
+        Image logo = FindByName<Image>("Title");
+
+        if (logo != null && logo.sprite != null)
+        {
+            Vector2 size = logo.rectTransform.rect.size;
+
+            report.AppendLine("  Title: logo sprite \"" + logo.sprite.name + "\", " +
+                              size.x.ToString("0") + "x" + size.y.ToString("0"));
+
+            if (size.x < 1f || size.y < 1f) { failures.Add("The menu logo has zero size"); }
+            return;
+        }
+
+        ReportText(report, failures, "SOULBOUND GATE");
     }
 
     private static void ReportText(StringBuilder report, List<string> failures, string expected)

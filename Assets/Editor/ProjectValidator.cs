@@ -49,6 +49,7 @@ public static class ProjectValidator
         ValidateEconomyRules(report, failures);
         ValidateWeaponUnlockRules(report, failures);
         ValidateGeneratedAssets(report, failures);
+        ValidateBrandingArt(report, failures);
         ValidateScreenScenes(report, failures);
         ValidateNpcBrains(report, failures);
 
@@ -73,6 +74,32 @@ public static class ProjectValidator
     }
 
     // ----- project-level checks ------------------------------------------
+
+    // The logo titles the menu and the key art carries the splash screen and
+    // the launcher icon. Both are generated from the sources in Docs/Branding,
+    // so a missing one means the import step was never run.
+    private static void ValidateBrandingArt(StringBuilder report, List<string> failures)
+    {
+        report.AppendLine();
+        report.AppendLine("Branding art:");
+
+        CheckSprite(BrandingImporter.LogoPath, "menu logo", report, failures);
+        CheckSprite(BrandingImporter.KeyArtPath, "splash key art", report, failures);
+    }
+
+    private static void CheckSprite(string path, string role, StringBuilder report, List<string> failures)
+    {
+        Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+
+        if (sprite == null)
+        {
+            failures.Add("Branding art missing (" + role + "): " + path);
+            report.AppendLine("  " + role + ": MISSING");
+            return;
+        }
+
+        report.AppendLine("  " + role + ": " + sprite.rect.width + "x" + sprite.rect.height);
+    }
 
     // The game over and victory screens hand the player to these, so a missing
     // one is a dead button on a phone rather than an error anybody would see.

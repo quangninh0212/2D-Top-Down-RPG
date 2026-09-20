@@ -50,6 +50,9 @@ public static class SoulboundGateAndroidSetup
     {
         PlaceholderAudioGenerator.GenerateAll();
         GameArtLibraryBuilder.Build();
+
+        // Before the icon: the icon is built from the key art when it exists.
+        BrandingImporter.ImportAll();
         AppIconGenerator.Generate();
         BossPrefabBuilder.Build();
         WriteAudioFolderNote();

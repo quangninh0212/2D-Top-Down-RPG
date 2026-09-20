@@ -25,6 +25,30 @@ Ghi chú: các mục "Đạt" đều được kiểm chứng bằng bài kiểm 
 
 ---
 
+## Hình ảnh thương hiệu của game
+
+Nhóm cung cấp hai ảnh vẽ tay và chúng đã được đưa vào game:
+
+| Ảnh | Dùng ở đâu |
+|---|---|
+| **Logo** (ảnh ngang, có tên game) | Tiêu đề trên **trang chủ**, thay cho dòng chữ trước đây |
+| **Ảnh vuông** (nhân vật trước cổng linh hồn) | **Màn hình vào game** (splash) và **biểu tượng ứng dụng** trên điện thoại |
+
+| Màn hình vào game | Trang chủ |
+|---|---|
+| ![Màn hình vào game](Docs/Screenshots/splash.png) | ![Trang chủ với logo](Docs/Screenshots/main-menu.png) |
+
+Hai ảnh gốc là JPEG nền đen, nếu dán thẳng vào game sẽ thành một ô đen giữa nền chuyển màu. Công cụ
+`BrandingImporter` xử lý một lần: **khử nền đen thành trong suốt** (theo kênh màu sáng nhất nên quầng
+sáng xanh vẫn giữ được), **cắt bỏ phần viền thừa** (logo từ 1672×941 còn 1236×847), rồi ghi ra PNG
+trong `Assets/Resources/Branding`. Ảnh gốc được giữ trong `Docs/Branding` để có thể chạy lại.
+
+Biểu tượng ứng dụng trước đây được vẽ tự động từ sprite nhân vật; nay dựng từ ảnh vuông, cả bản
+thường lẫn bản "adaptive icon" của Android. Nếu thiếu file ảnh thì mã vẫn chạy và tự quay về bản chữ
+và biểu tượng vẽ tự động như cũ.
+
+---
+
 ## Đối chiếu nhanh: số nút điều hướng
 
 Yêu cầu là **ít nhất 3 nút**, mỗi nút sang một màn hình riêng. Bản hiện tại có **4 nút ở cả hai
@@ -286,7 +310,11 @@ choáng) vẫn chạy nguyên.
 | `Editor/ScreenSmokeTest.cs` | Kiểm thử 3 màn hình mới |
 | `Editor/Tests/GameStateTests.cs` | 11 unit test cho điều hướng, lịch sử, hình học AI |
 | `Editor/ScreenshotCapture.cs` | Chụp ảnh các màn hình trong báo cáo, đi qua đúng luồng chơi thật |
-| `Docs/Screenshots/*.png` | 6 ảnh chụp màn hình dùng trong báo cáo này |
+| `Editor/BrandingImporter.cs` | Khử nền đen, cắt viền và nhập hai ảnh thương hiệu vào game |
+| `Scripts/UI/Branding.cs` | Nạp logo và ảnh vuông, có đường lui khi thiếu file |
+| `Resources/Branding/*.png` | Logo và ảnh vuông đã xử lý |
+| `Docs/Branding/*.jpg` | Hai ảnh gốc do nhóm cung cấp |
+| `Docs/Screenshots/*.png` | 8 ảnh chụp màn hình dùng trong báo cáo này |
 | `Scenes/ProgressScene.unity`, `AchievementsScene.unity`, `SettingsScene.unity` | Ba màn hình mới |
 | `Resources/Audio/SFX/GameOver.wav`, `NpcAlert.wav` | Hai âm thanh mới |
 
@@ -304,7 +332,9 @@ choáng) vẫn chạy nguyên.
 | `Save/ProfileStats.cs` | Lịch sử từng màn, số lần thất bại, kết cục lượt gần nhất |
 | `Save/GameSaveManager.cs` | Ghi lại lượt chơi thất bại vào lịch sử |
 | `Levels/LevelManager.cs` | Ghi lịch sử khi qua màn và khi hạ boss; reset mạng báo động mỗi màn |
-| `Menu/MainMenu.cs` | Thêm nút TIẾN TRÌNH |
+| `Menu/MainMenu.cs` | Thêm nút TIẾN TRÌNH; dùng logo làm tiêu đề thay dòng chữ |
+| `Menu/SplashScreenController.cs` | Màn hình vào game dùng ảnh vuông |
+| `Editor/AppIconGenerator.cs` | Dựng biểu tượng ứng dụng từ ảnh vuông |
 | `Misc/GameplaySprites.cs` | Vẽ biểu tượng `!` cho NPC |
 | `Audio/GameSfx.cs`, `Editor/PlaceholderAudioGenerator.cs` | Hai âm thanh mới |
 | `Editor/LevelSceneBuilder.cs` | Tạo 3 scene màn hình mới (không đụng scene đã có) |
@@ -320,7 +350,7 @@ Toàn bộ chạy bằng Unity 2022.3.3f1 ở chế độ batch trên nhánh `fe
 | Bộ kiểm thử | Nội dung | Kết quả |
 |---|---|---|
 | Unit test (EditMode) | 36 test, trong đó 11 test mới | **36 / 36 đạt** |
-| `ProjectValidator` | 12 scene trong build, 3 màn hình có controller, 3 prefab quái có bộ não | **Đạt hết** |
+| `ProjectValidator` | 12 scene trong build, 3 màn hình có controller, 3 prefab quái có bộ não, 2 ảnh thương hiệu | **Đạt hết** |
 | `StatesSmokeTest` | Game over, lưu tiến trình, AI bầy (chạy thật trong Scene1) | **Đạt hết** |
 | `NpcBrainSmokeTest` (Grape) | AI ném từ xa trong Scene2 | **Đạt hết** |
 | `NpcBrainSmokeTest` (Ghost) | AI mai phục trong Scene4 | **Đạt hết** |
@@ -329,7 +359,7 @@ Toàn bộ chạy bằng Unity 2022.3.3f1 ở chế độ batch trên nhánh `fe
 | `GameplaySmokeTest` | HUD và màn chơi (hồi quy) | **Đạt hết** |
 | `MechanicsSmokeTest` | Cơ chế tuần trước (hồi quy) | **Đạt hết** |
 | `TransitionSmokeTest` | Chuyển màn (hồi quy) | **Đạt hết** |
-| `ScreenshotCapture` | Chết thật rồi thắng thật, chụp 6 màn hình | **6 / 6 ảnh** |
+| `ScreenshotCapture` | Chết thật rồi thắng thật, chụp 8 màn hình | **8 / 8 ảnh** |
 | `AndroidBuilder` | Build file cài đặt Android | **Thành công** |
 
 Sau khi sửa bốn lỗi giao diện nêu ở dưới, các bài `ScreenSmokeTest`, `MenuSmokeTest`,

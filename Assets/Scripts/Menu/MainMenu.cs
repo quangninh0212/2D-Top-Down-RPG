@@ -203,11 +203,7 @@ public class MainMenu : MonoBehaviour
     {
         CanvasGroup group = PixelUI.NewFullScreenGroup("Home", safeArea);
 
-        Text title = PixelUI.NewTitle("Title", group.transform, "SOULBOUND GATE", 82);
-        title.rectTransform.anchorMin = new Vector2(0.5f, 1f);
-        title.rectTransform.anchorMax = new Vector2(0.5f, 1f);
-        title.rectTransform.sizeDelta = new Vector2(1600f, 120f);
-        title.rectTransform.anchoredPosition = new Vector2(0f, -80f);
+        BuildTitle(group.transform);
 
         Text credit = PixelUI.NewBody("Credit", group.transform, "Developed by Quang Ninh and Hong Phong", 26);
         credit.rectTransform.anchorMin = new Vector2(0.5f, 0f);
@@ -216,9 +212,11 @@ public class MainMenu : MonoBehaviour
         credit.rectTransform.anchoredPosition = new Vector2(0f, 34f);
         credit.color = PixelUI.Muted;
 
-        Vector2 size = new Vector2(460f, 82f);
-        float top = 250f;
-        float gap = 96f;
+        // The logo needs the top of the screen, so the menu column starts lower
+        // and sits a little tighter than it did under the one-line text title.
+        Vector2 size = Branding.HasLogo ? new Vector2(460f, 76f) : new Vector2(460f, 82f);
+        float top = Branding.HasLogo ? 110f : 250f;
+        float gap = Branding.HasLogo ? 88f : 96f;
 
         PixelUI.NewButton("NewGame", group.transform, "CHƠI MỚI", size, new Vector2(0f, top), OnNewGame);
 
@@ -237,6 +235,35 @@ public class MainMenu : MonoBehaviour
         PixelUI.NewButton("Quit", group.transform, "THOÁT GAME", size, new Vector2(0f, top - gap * 6f), OnQuit);
 
         return group;
+    }
+
+    // The supplied logo when there is one, the old text title when there is
+    // not. Either way the object is called "Title", so anything looking for it
+    // finds it.
+    private static void BuildTitle(Transform parent)
+    {
+        if (Branding.HasLogo)
+        {
+            Image logo = PixelUI.NewImage("Title", parent);
+            logo.sprite = Branding.Logo;
+            logo.preserveAspect = true;
+            logo.raycastTarget = false;
+
+            RectTransform rect = logo.rectTransform;
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.sizeDelta = new Vector2(500f, 342f);
+            rect.anchoredPosition = new Vector2(0f, -12f);
+
+            return;
+        }
+
+        Text title = PixelUI.NewTitle("Title", parent, "SOULBOUND GATE", 82);
+        title.rectTransform.anchorMin = new Vector2(0.5f, 1f);
+        title.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+        title.rectTransform.sizeDelta = new Vector2(1600f, 120f);
+        title.rectTransform.anchoredPosition = new Vector2(0f, -80f);
     }
 
     // Shared by the "start a new game" and "quit" prompts, so both look and

@@ -18,6 +18,11 @@ public static class AppIconGenerator
     [MenuItem("Tools/Soulbound Gate/Generate App Icon")]
     public static void Generate()
     {
+        // The supplied square key art is exactly what a launcher icon wants, so
+        // it wins when it is there. The drawn-from-sprites version below stays
+        // as the fallback for a clone without the artwork.
+        if (GenerateFromKeyArt()) { return; }
+
         Texture2D source = LoadReadable(PlayerIdlePath);
         if (source == null)
         {
@@ -55,6 +60,81 @@ public static class AppIconGenerator
         ApplyToPlayerSettings();
 
         SoulboundSetupLog.Step("App icon generated at " + IconPath + " and applied to Android Player Settings.");
+    }
+
+    private static bool GenerateFromKeyArt()
+    {
+        if (!File.Exists(BrandingImporter.KeyArtPath)) { return false; }
+
+        Texture2D art = LoadReadable(BrandingImporter.KeyArtPath);
+        if (art == null) { return false; }
+
+        Directory.CreateDirectory(OutputFolder);
+
+        // The art has transparent corners, and a launcher icon may not, so it
+        // is laid over a ground in its own dark blue.
+        Color32[] ground = SolidFill(new Color(0.05f, 0.06f, 0.13f));
+
+        Color32[] icon = (Color32[])ground.Clone();
+        DrawArt(icon, art, 1f);
+        WritePng(IconPath, icon);
+
+        WritePng(BackgroundPath, ground);
+
+        // Adaptive icons crop hard towards the middle, so the art is inset.
+        Color32[] foreground = new Color32[Size * Size];
+        DrawArt(foreground, art, 0.78f);
+        WritePng(ForegroundPath, foreground);
+
+        AssetDatabase.Refresh();
+
+        ConfigureAsSprite(IconPath);
+        ConfigureAsSprite(ForegroundPath);
+        ConfigureAsSprite(BackgroundPath);
+
+        ApplyToPlayerSettings();
+
+        SoulboundSetupLog.Step("App icon built from the supplied key art and applied to Android Player Settings.");
+        return true;
+    }
+
+    private static Color32[] SolidFill(Color colour)
+    {
+        Color32[] pixels = new Color32[Size * Size];
+        Color32 packed = colour;
+
+        for (int i = 0; i < pixels.Length; i++) { pixels[i] = packed; }
+
+        return pixels;
+    }
+
+    // Full-colour artwork, so it is sampled smoothly rather than with the
+    // nearest-neighbour scaling the pixel-art path needs.
+    private static void DrawArt(Color32[] target, Texture2D source, float coverage)
+    {
+        int drawSize = Mathf.RoundToInt(Size * coverage);
+        int origin = (Size - drawSize) / 2;
+
+        for (int y = 0; y < drawSize; y++)
+        {
+            int destY = origin + y;
+            if (destY < 0 || destY >= Size) { continue; }
+
+            for (int x = 0; x < drawSize; x++)
+            {
+                int destX = origin + x;
+                if (destX < 0 || destX >= Size) { continue; }
+
+                Color pixel = source.GetPixelBilinear((x + 0.5f) / drawSize, (y + 0.5f) / drawSize);
+                if (pixel.a < 0.01f) { continue; }
+
+                Color under = target[destY * Size + destX];
+                Color blended = Color.Lerp(under, pixel, pixel.a);
+                blended.a = Mathf.Max(under.a, pixel.a);
+
+                target[destY * Size + destX] = blended;
+            }
+        }
     }
 
     // Dark blue-violet gradient with a warm rune ring - reads as "fantasy gate"

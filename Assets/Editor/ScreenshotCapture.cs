@@ -79,6 +79,14 @@ public static class ScreenshotCapture
             case 11: Go(GameScenes.Settings); step++; Wait(1.5f); break;
             case 12: Capture("settings.png"); step++; Wait(1.5f); break;
 
+            // The two branded screens. The splash moves on by itself after a
+            // few seconds, so it is caught while it is still up.
+            case 13: Load(GameScenes.Splash); step++; Wait(1.2f); break;
+            case 14: Capture("splash.png"); step++; Wait(1.5f); break;
+
+            case 15: Load(GameScenes.MainMenu); step++; Wait(1.5f); break;
+            case 16: Capture("main-menu.png"); step++; Wait(1.5f); break;
+
             default: Finish(); break;
         }
     }
@@ -97,6 +105,11 @@ public static class ScreenshotCapture
         }
 
         SceneFlow.GoToScreen(sceneName, GameScenes.MainMenu);
+    }
+
+    private static void Load(string sceneName)
+    {
+        SceneManager.LoadScene(sceneName);
     }
 
     private static void Die()
