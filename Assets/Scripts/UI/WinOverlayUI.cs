@@ -27,6 +27,13 @@ public class WinOverlayUI : MonoBehaviour
         group.blocksRaycasts = false;
         group.interactable = false;
 
+        // A level in daylight is far too bright to read gold text over, so the
+        // celebration dims what is behind it first.
+        Image shade = PixelUI.NewImage("Shade", group.transform);
+        PixelUI.Stretch(shade.rectTransform);
+        shade.color = new Color(0.04f, 0.03f, 0.01f, 0.55f);
+        shade.raycastTarget = false;
+
         flash = PixelUI.NewImage("Flash", group.transform);
         PixelUI.Stretch(flash.rectTransform);
         flash.color = new Color(1f, 0.92f, 0.62f, 0f);

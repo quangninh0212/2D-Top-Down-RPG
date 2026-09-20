@@ -765,6 +765,9 @@ public class GameplayRuntime : MonoBehaviour
 
     private void OnPlayerDied()
     {
+        // The joystick and the attack buttons have nothing left to drive, and
+        // leaving them on top of the game over screen reads as a broken menu.
+        if (controlsRoot != null) { controlsRoot.SetActive(false); }
         if (gameOver != null) { gameOver.Show(); }
     }
 

@@ -25,6 +25,30 @@ Ghi chú: các mục "Đạt" đều được kiểm chứng bằng bài kiểm 
 
 ---
 
+## Đối chiếu nhanh: số nút điều hướng
+
+Yêu cầu là **ít nhất 3 nút**, mỗi nút sang một màn hình riêng. Bản hiện tại có **4 nút ở cả hai
+trạng thái**, ảnh chụp từ game đang chạy:
+
+| Trạng thái | Số nút | Các nút |
+|---|---|---|
+| Game over | **4** | CHƠI LẠI · TRANG CHỦ · TIẾN TRÌNH · CÀI ĐẶT |
+| Win (màn hình chiến thắng) | **4** | CHƠI LẠI · TRANG CHỦ · THÀNH TÍCH · TIẾN TRÌNH |
+
+**Màn hình game over — 4 nút:**
+
+![Màn hình game over với bốn nút điều hướng](Docs/Screenshots/game-over.png)
+
+**Màn hình chiến thắng — 4 nút:**
+
+![Màn hình chiến thắng với bốn nút điều hướng](Docs/Screenshots/victory.png)
+
+Bốn đích đến của mỗi màn hình là bốn scene khác nhau, đều có trong Build Settings. Bài kiểm thử tự
+động `StatesSmokeTest` đếm đúng **4/4 nút** trên màn hình game over và xác nhận cả bốn đích đến đều
+là scene có thật trong bản build.
+
+---
+
 ## 1. Trạng thái GAME OVER
 
 ### 1a. Thông báo, hiệu ứng hình ảnh và âm thanh
@@ -56,6 +80,9 @@ Các nút xếp thành 2 hàng, mỗi hàng 2 nút:
 | **TRANG CHỦ** | Dọn sạch đối tượng của lượt chơi, về trang chủ | `MainMenu` |
 | **TIẾN TRÌNH** | Xem lịch sử các màn đã qua | `ProgressScene` *(màn hình mới)* |
 | **CÀI ĐẶT** | Chỉnh âm lượng, bật/tắt tiếng, rung | `SettingsScene` *(màn hình mới)* |
+
+Trong lúc màn hình này hiện ra, **bộ điều khiển cảm ứng được ẩn đi** (cần điều khiển, nút tấn công,
+nút kỹ năng), để người chơi chỉ còn thấy bốn nút điều hướng.
 
 Bốn đích đến là **bốn scene khác nhau**, đều nằm trong Build Settings — không phải bảng dán đè lên
 màn chơi. Việc chuyển màn đi qua `SceneFlow.GoToScreen`, hàm này dọn người chơi, HUD và các đối tượng
@@ -128,8 +155,10 @@ chính màn hình chơi game**:
 | **Hiệu ứng hình ảnh 3** | Quầng sáng vàng phía sau đập theo nhịp |
 | **Hiệu ứng âm thanh** | `GameSfx.Victory` — hợp âm rải đi lên (523 → 659 → 784 → 1046 Hz) |
 
-Nút bấm trên màn chơi được ẩn đi trong lúc này. Sau khoảng 2,2 giây, màn hình mờ dần và chuyển sang
-màn hình chiến thắng.
+Nút bấm trên màn chơi được ẩn đi trong lúc này, và nền phía sau được làm tối bớt để chữ vàng đọc rõ
+trên cả những màn sáng. Sau khoảng 2,2 giây, màn hình mờ dần và chuyển sang màn hình chiến thắng.
+
+![Hiệu ứng chiến thắng hiện ngay trên màn hình chơi game](Docs/Screenshots/win-overlay.png)
 
 ### 3c. Màn hình chiến thắng với bốn nút điều hướng
 
@@ -144,6 +173,8 @@ cùng bốn nút:
 | **TIẾN TRÌNH** | Xem lịch sử từng màn | `ProgressScene` *(màn hình mới)* |
 
 Hai màn hình sau có nút **QUAY LẠI** đưa người chơi về đúng màn hình chiến thắng vừa rời đi.
+
+Ảnh màn hình chiến thắng xem ở [phần đối chiếu nhanh](#đối-chiếu-nhanh-số-nút-điều-hướng) phía trên.
 
 ---
 
@@ -167,6 +198,12 @@ Hai màn hình sau có nút **QUAY LẠI** đưa người chơi về đúng màn
 - Dùng lại đúng bảng cài đặt của trang chủ và menu tạm dừng: âm lượng chung, nhạc nền, hiệu ứng, rung.
 - Thêm hai công tắc **Hiệu ứng âm thanh** và **Nhạc nền** (BẬT/TẮT), để tắt tiếng mà không cần vào màn chơi.
 - Nút **ĐÓNG** trả người chơi về nơi đã mở màn hình này.
+
+### Ảnh ba màn hình
+
+| Tiến trình | Thành tích | Cài đặt |
+|---|---|---|
+| ![Màn hình tiến trình](Docs/Screenshots/progress.png) | ![Màn hình thành tích](Docs/Screenshots/achievements.png) | ![Màn hình cài đặt](Docs/Screenshots/settings.png) |
 
 ---
 
@@ -243,6 +280,8 @@ choáng) vẫn chạy nguyên.
 | `Editor/NpcBrainSmokeTest.cs` | Kiểm thử AI ném và AI mai phục |
 | `Editor/ScreenSmokeTest.cs` | Kiểm thử 3 màn hình mới |
 | `Editor/Tests/GameStateTests.cs` | 11 unit test cho điều hướng, lịch sử, hình học AI |
+| `Editor/ScreenshotCapture.cs` | Chụp ảnh các màn hình trong báo cáo, đi qua đúng luồng chơi thật |
+| `Docs/Screenshots/*.png` | 6 ảnh chụp màn hình dùng trong báo cáo này |
 | `Scenes/ProgressScene.unity`, `AchievementsScene.unity`, `SettingsScene.unity` | Ba màn hình mới |
 | `Resources/Audio/SFX/GameOver.wav`, `NpcAlert.wav` | Hai âm thanh mới |
 
@@ -253,7 +292,8 @@ choáng) vẫn chạy nguyên.
 | `UI/GameOverUI.cs` | Viết lại: hiệu ứng, tóm tắt lượt chơi, 4 nút điều hướng |
 | `Menu/VictoryScreenController.cs` | Thêm 2 nút (Thành tích, Tiến trình), lấy số liệu dự phòng từ lịch sử |
 | `Boss/VictorySequence.cs` | Phát sự kiện thắng ngay khi boss chết để bật hiệu ứng trên màn chơi |
-| `UI/GameplayRuntime.cs` | Dựng và điều khiển lớp phủ chiến thắng |
+| `UI/GameplayRuntime.cs` | Dựng lớp phủ chiến thắng; ẩn bộ điều khiển cảm ứng khi thắng hoặc thua |
+| `UI/SettingsPanel.cs` | Dời số phần trăm ra khỏi chỗ núm trượt che (trước đây 100% hiện thành "00%") |
 | `Core/GameScenes.cs` | Thêm 3 scene mới vào danh sách và thứ tự build |
 | `Core/SceneFlow.cs` | `GoToScreen` / `ReturnFromScreen` — vào và ra khỏi màn hình riêng |
 | `Save/ProfileStats.cs` | Lịch sử từng màn, số lần thất bại, kết cục lượt gần nhất |
@@ -284,7 +324,11 @@ Toàn bộ chạy bằng Unity 2022.3.3f1 ở chế độ batch trên nhánh `fe
 | `GameplaySmokeTest` | HUD và màn chơi (hồi quy) | **Đạt hết** |
 | `MechanicsSmokeTest` | Cơ chế tuần trước (hồi quy) | **Đạt hết** |
 | `TransitionSmokeTest` | Chuyển màn (hồi quy) | **Đạt hết** |
+| `ScreenshotCapture` | Chết thật rồi thắng thật, chụp 6 màn hình | **6 / 6 ảnh** |
 | `AndroidBuilder` | Build file cài đặt Android | **Thành công** |
+
+Sau khi sửa bốn lỗi giao diện nêu ở dưới, các bài `ScreenSmokeTest`, `MenuSmokeTest`,
+`GameplaySmokeTest` và `StatesSmokeTest` đã được **chạy lại và vẫn đạt hết**.
 
 ### Vài số liệu do máy ghi lại trong lúc chạy
 
@@ -315,7 +359,19 @@ lần** và khoảng cách rút còn **3,00** đơn vị.
 chơi hiện "CHƯA MỞ"), đếm đúng 1 lần thất bại; màn Thành tích liệt kê đủ 5 cột mốc và đánh dấu đúng
 cột mốc đã đạt; màn Cài đặt có đủ thanh trượt và hai công tắc; bấm ĐÓNG thì quay về đúng trang chủ.
 
-### Một lỗi đã tìm ra và sửa trong quá trình kiểm thử
+### Bốn lỗi giao diện tìm ra nhờ ảnh chụp màn hình
+
+Ảnh chụp không chỉ để minh họa: nhìn ảnh mới thấy bốn chỗ chưa ổn, cả bốn đã sửa và chụp lại:
+
+1. **Nút cảm ứng đè lên màn hình game over** — cần điều khiển, nút TẤN CÔNG, KHIÊN, CHOÁNG vẫn hiện
+   phía trên bốn nút điều hướng. Nay khi người chơi chết, bộ điều khiển được ẩn đi.
+2. **Chữ CHIẾN THẮNG khó đọc** trên nền đồng cỏ sáng. Nay lớp phủ làm tối nền trước khi hiện chữ.
+3. **Màn hình Tiến trình bị tràn** — dòng cuối của bảng tổng kết dính vào viền và hai nút đè lên
+   bảng. Nay bảng cao hơn, nút đẩy xuống thấp hơn.
+4. **Màn hình Cài đặt hiện hai lần chữ "CÀI ĐẶT"**, và số "100%" bị núm trượt che thành "00%". Nay bỏ
+   tiêu đề thừa và dời số ra chỗ trống — sửa ở bảng dùng chung nên trang chủ và menu tạm dừng cũng hết lỗi.
+
+### Một lỗi logic đã tìm ra và sửa trong quá trình kiểm thử
 
 Lần chạy đầu tiên, **không NPC nào nhìn thấy người chơi**. Nguyên nhân: mỗi màn có một collider hình
 đa giác cỡ cả bản đồ dùng để giới hạn camera; tia kiểm tra tầm nhìn xuất phát từ bên trong nó nên

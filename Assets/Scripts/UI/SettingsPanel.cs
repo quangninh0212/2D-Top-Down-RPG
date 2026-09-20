@@ -57,9 +57,11 @@ public class SettingsPanel : MonoBehaviour
         text.rectTransform.sizeDelta = new Vector2(360f, 50f);
         text.rectTransform.anchoredPosition = new Vector2(-230f, y);
 
+        // Clear of the slider: at 100% the handle sits at the right-hand end and
+        // used to cover the first digit of the number.
         Text readout = PixelUI.NewBody("Value", parent, Percent(value), 30);
         readout.rectTransform.sizeDelta = new Vector2(120f, 50f);
-        readout.rectTransform.anchoredPosition = new Vector2(330f, y);
+        readout.rectTransform.anchoredPosition = new Vector2(370f, y);
         readout.color = PixelUI.Gold;
 
         PixelUI.NewSlider("Slider", parent, new Vector2(400f, 26f), new Vector2(90f, y), value, v =>

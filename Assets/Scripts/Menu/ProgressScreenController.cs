@@ -16,12 +16,12 @@ public class ProgressScreenController : MonoBehaviour
 
         // Two screens that belong together: the records live next door, and
         // hopping straight across beats going back to the menu first.
-        PixelUI.NewButton("Achievements", safeArea, "THÀNH TÍCH", new Vector2(420f, 92f),
-            new Vector2(230f, -400f),
+        PixelUI.NewButton("Achievements", safeArea, "THÀNH TÍCH", new Vector2(420f, 84f),
+            new Vector2(230f, -450f),
             () => SceneFlow.GoToScreen(GameScenes.Achievements, SceneFlow.ScreenReturnScene));
 
         Button back = ScreenScaffold.AddBackButton(safeArea);
-        back.GetComponent<RectTransform>().anchoredPosition = new Vector2(-230f, -400f);
+        back.GetComponent<RectTransform>().anchoredPosition = new Vector2(-230f, -450f);
     }
 
     private void Update()
@@ -75,22 +75,24 @@ public class ProgressScreenController : MonoBehaviour
 
     private static void BuildSummary(RectTransform safeArea)
     {
-        RectTransform panel = PixelUI.NewPanel("Summary", safeArea, new Vector2(1000f, 250f));
-        ((RectTransform)panel.parent).anchoredPosition = new Vector2(0f, -240f);
+        // Tall enough for four rows with room to breathe: at 250 the last row
+        // sat on the frame.
+        RectTransform panel = PixelUI.NewPanel("Summary", safeArea, new Vector2(1000f, 290f));
+        ((RectTransform)panel.parent).anchoredPosition = new Vector2(0f, -245f);
 
         int furthest = ProfileStats.FurthestLevelCleared;
 
         ScreenScaffold.AddRow(panel, "Furthest", "Cấp độ xa nhất đã qua",
             furthest > 0 ? furthest + " / " + LevelCatalog.Count : "Chưa qua cấp nào",
-            80f, 1000f, PixelUI.Gold);
+            95f, 1000f, PixelUI.Gold);
 
         ScreenScaffold.AddRow(panel, "Runs", "Số lần phá đảo",
-            ProfileStats.RunsCompleted.ToString(), 20f, 1000f, PixelUI.Cream);
+            ProfileStats.RunsCompleted.ToString(), 35f, 1000f, PixelUI.Cream);
 
         ScreenScaffold.AddRow(panel, "Deaths", "Số lần thất bại",
-            ProfileStats.Deaths.ToString(), -40f, 1000f, PixelUI.HealthRed);
+            ProfileStats.Deaths.ToString(), -25f, 1000f, PixelUI.HealthRed);
 
-        ScreenScaffold.AddRow(panel, "LastRun", "Lượt chơi gần nhất", LastRunText(), -100f, 1000f, PixelUI.Cream);
+        ScreenScaffold.AddRow(panel, "LastRun", "Lượt chơi gần nhất", LastRunText(), -85f, 1000f, PixelUI.Cream);
     }
 
     private static string LastRunText()

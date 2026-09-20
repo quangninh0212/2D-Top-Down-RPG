@@ -9,7 +9,8 @@ public class SettingsScreenController : MonoBehaviour
 
     private void Awake()
     {
-        RectTransform safeArea = ScreenScaffold.Build(transform, "SettingsCanvas", "CÀI ĐẶT",
+        // No heading of its own: the settings sheet below already has one.
+        RectTransform safeArea = ScreenScaffold.Build(transform, "SettingsCanvas", "",
             new Color(0.03f, 0.05f, 0.05f), new Color(0.10f, 0.18f, 0.18f));
 
         AudioManager.EnsureExists();
@@ -37,14 +38,14 @@ public class SettingsScreenController : MonoBehaviour
     // here means the player does not have to start a run to silence the game.
     private void BuildAudioSwitches(RectTransform safeArea)
     {
-        RectTransform panel = PixelUI.NewPanel("AudioSwitches", settings.transform, new Vector2(880f, 150f));
-        ((RectTransform)panel.parent).anchoredPosition = new Vector2(0f, -400f);
+        RectTransform panel = PixelUI.NewPanel("AudioSwitches", settings.transform, new Vector2(880f, 190f));
+        ((RectTransform)panel.parent).anchoredPosition = new Vector2(0f, -410f);
 
-        AddSwitch(panel, "SfxSwitch", "Hiệu ứng âm thanh", 34f,
+        AddSwitch(panel, "SfxSwitch", "Hiệu ứng âm thanh", 44f,
                   () => AudioToggles.SfxEnabled,
                   value => AudioToggles.SfxEnabled = value);
 
-        AddSwitch(panel, "MusicSwitch", "Nhạc nền", -40f,
+        AddSwitch(panel, "MusicSwitch", "Nhạc nền", -44f,
                   () => AudioToggles.MusicEnabled,
                   value => AudioToggles.MusicEnabled = value);
     }

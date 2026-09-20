@@ -21,10 +21,15 @@ public static class ScreenScaffold
 
         RectTransform safeArea = PixelUI.CreateSafeArea(canvas.transform, 24f);
 
-        Text title = PixelUI.NewTitle("Heading", safeArea, heading, 72);
-        title.color = PixelUI.Gold;
-        title.rectTransform.sizeDelta = new Vector2(1600f, 110f);
-        title.rectTransform.anchoredPosition = new Vector2(0f, 380f);
+        // A screen whose sheet already carries its own title passes none here,
+        // rather than showing the same words twice.
+        if (!string.IsNullOrEmpty(heading))
+        {
+            Text title = PixelUI.NewTitle("Heading", safeArea, heading, 72);
+            title.color = PixelUI.Gold;
+            title.rectTransform.sizeDelta = new Vector2(1600f, 90f);
+            title.rectTransform.anchoredPosition = new Vector2(0f, 430f);
+        }
 
         return safeArea;
     }
@@ -33,8 +38,8 @@ public static class ScreenScaffold
     // the frame rather than something each screen remembers to add.
     public static Button AddBackButton(RectTransform safeArea)
     {
-        return PixelUI.NewButton("Back", safeArea, "QUAY LẠI", new Vector2(420f, 92f),
-                                 new Vector2(0f, -400f), SceneFlow.ReturnFromScreen);
+        return PixelUI.NewButton("Back", safeArea, "QUAY LẠI", new Vector2(420f, 84f),
+                                 new Vector2(0f, -450f), SceneFlow.ReturnFromScreen);
     }
 
     private static void EnsureCamera(Color background)
