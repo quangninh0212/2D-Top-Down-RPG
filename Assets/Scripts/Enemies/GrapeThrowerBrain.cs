@@ -36,7 +36,7 @@ public class GrapeThrowerBrain : NpcBrain
 
     protected override void Engage(Vector2 playerPosition, float distance)
     {
-        bool clearLine = NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+        bool clearLine = HasClearLineToPlayer;
 
         // Nothing to throw at through a wall: move until there is a line.
         if (!clearLine)
@@ -87,7 +87,7 @@ public class GrapeThrowerBrain : NpcBrain
         // wounded thrower kept lobbing at a player who had long since run off.
         if (Vector2.Distance(transform.position, playerPosition) > attackRange) { return; }
 
-        if (!NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition)) { return; }
+        if (!HasClearLineToPlayer) { return; }
 
         nextAttackTime = Time.time + attackCooldown;
         ThrowsMade++;

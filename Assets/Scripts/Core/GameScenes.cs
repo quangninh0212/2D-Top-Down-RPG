@@ -11,6 +11,9 @@ public static class GameScenes
 
     // Stand-alone screens the game over and victory screens navigate to. Each
     // one is a scene of its own, not a panel laid over what came before.
+    // Tells the opening before the first level, and the ending after the boss.
+    public const string Story = "StoryScene";
+
     public const string Progress = "ProgressScene";
     public const string Achievements = "AchievementsScene";
     public const string Settings = "SettingsScene";
@@ -26,7 +29,7 @@ public static class GameScenes
     public static readonly string[] BuildOrder =
     {
         Splash, MainMenu, Loading, Scene1, Scene2, Scene3, Scene4, Scene5, Victory,
-        Progress, Achievements, Settings
+        Story, Progress, Achievements, Settings
     };
 
     public static readonly string[] Levels = { Scene1, Scene2, Scene3, Scene4, Scene5 };

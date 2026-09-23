@@ -131,6 +131,7 @@ public static class LevelSceneBuilder
         NudgeBlockedEntrances(scene);
         NudgeUnreachableEnemies(scene);
         EnsureGameplayAdditions(scene);
+        EnsureGateKey(scene);
 
         AssignPersistentIds(scene);
 
@@ -162,6 +163,7 @@ public static class LevelSceneBuilder
     [MenuItem("Tools/Soulbound Gate/Steps/Build Screen Scenes")]
     public static void EnsureScreenScenes()
     {
+        EnsureSimpleScene(GameScenes.Story, "StoryScreen", typeof(StoryScreenController));
         EnsureSimpleScene(GameScenes.Progress, "ProgressScreen", typeof(ProgressScreenController));
         EnsureSimpleScene(GameScenes.Achievements, "AchievementsScreen", typeof(AchievementsScreenController));
         EnsureSimpleScene(GameScenes.Settings, "SettingsScreen", typeof(SettingsScreenController));
@@ -676,6 +678,7 @@ public static class LevelSceneBuilder
         NudgeBlockedEntrances(scene);
         NudgeUnreachableEnemies(scene);
         EnsureGameplayAdditions(scene);
+        EnsureGateKey(scene);
 
         AssignPersistentIds(scene);
         RemoveTemplateLeftovers(scene);
@@ -1244,6 +1247,11 @@ public static class LevelSceneBuilder
             {
                 AssignId(chest.gameObject, scene.name + ":item:" + index++, used);
             }
+
+            foreach (GateKey key in root.GetComponentsInChildren<GateKey>(true))
+            {
+                AssignId(key.gameObject, scene.name + ":item:" + index++, used);
+            }
         }
     }
 
@@ -1313,6 +1321,85 @@ public static class LevelSceneBuilder
         SoulboundSetupLog.Step("Added forbidden zone " + zoneSpot.ToString("0.0") + ", speed rune " +
                                runeSpot.ToString("0.0") + ", spike trap " + trapSpot.ToString("0.0") +
                                " and treasure chest " + chestSpot.ToString("0.0") + " to " + scene.name + ".");
+    }
+
+    // A level whose gate is opened by a key needs that key placed in it. This
+    // is separate from the rest of the additions because those are only ever
+    // placed once, and the levels already have them.
+    private static void EnsureGateKey(Scene scene)
+    {
+        LevelInfo info;
+        if (!LevelCatalog.TryGet(scene.name, out info) || info.Goal != LevelGoal.FindKey) { return; }
+
+        foreach (GateKey placed in FindAllInScene<GateKey>(scene))
+        {
+            if (placed != null) { return; }
+        }
+
+        HashSet<Vector2Int> reachable = WalkabilityDiagnostics.ReachableCells(scene);
+        if (reachable.Count == 0)
+        {
+            SoulboundSetupLog.Warn("No reachable area found in " + scene.name + "; gate key not placed.");
+            return;
+        }
+
+        Vector2 spawn = Vector2.zero;
+        foreach (AreaEntrance entrance in FindAllInScene<AreaEntrance>(scene))
+        {
+            if (entrance.IsDefaultSpawn) { spawn = entrance.transform.position; break; }
+        }
+
+        List<Vector2> enemies = new List<Vector2>();
+        foreach (EnemyHealth enemy in FindAllInScene<EnemyHealth>(scene))
+        {
+            enemies.Add(enemy.transform.position);
+        }
+
+        // Across the room from where the player lands: a key you can pick up
+        // on the way in is not a search.
+        Vector2 preferred = spawn.sqrMagnitude > 0.01f ? -spawn : new Vector2(9f, 4f);
+        Vector2 spot = PickSpot(scene, reachable, preferred, new List<Vector2> { spawn }, enemies, 7f, 1.5f);
+
+        Transform parent = AdditionsRoot(scene);
+        CreateObject<GateKey>(parent, "Gate Key", spot);
+
+        SoulboundSetupLog.Step("Placed the gate key at " + spot.ToString("0.0") + " in " + scene.name + ".");
+    }
+
+    // Placing the key on its own, without repairing the whole level: the levels
+    // are already built, and this is the one thing they are missing.
+    [MenuItem("Tools/Soulbound Gate/Steps/Place Gate Keys")]
+    public static void PlaceGateKeys()
+    {
+        for (int level = 1; level <= LevelCatalog.Count; level++)
+        {
+            LevelInfo info = LevelCatalog.Get(level);
+            if (info.Goal != LevelGoal.FindKey) { continue; }
+
+            string path = ScenesFolder + "/" + info.Scene + ".unity";
+            if (!File.Exists(path)) { continue; }
+
+            Scene scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+
+            EnsureGateKey(scene);
+            AssignPersistentIds(scene);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, path);
+        }
+    }
+
+    private static Transform AdditionsRoot(Scene scene)
+    {
+        foreach (GameObject existing in scene.GetRootGameObjects())
+        {
+            if (existing.name == AdditionsRootName) { return existing.transform; }
+        }
+
+        GameObject root = new GameObject(AdditionsRootName);
+        SceneManager.MoveGameObjectToScene(root, scene);
+
+        return root.transform;
     }
 
     // The nearest cell to where it would ideally go that the player can walk to,

@@ -15,6 +15,7 @@ public static class GameplaySprites
     private static Sprite spikesUp;
     private static Sprite hazardZone;
     private static Sprite alert;
+    private static Sprite gateKey;
     private static Sprite speakerOn;
     private static Sprite speakerOff;
     private static Sprite musicOn;
@@ -54,6 +55,12 @@ public static class GameplaySprites
     public static Sprite Alert
     {
         get { return alert != null ? alert : (alert = BuildAlert()); }
+    }
+
+    // The key that opens the marsh gate.
+    public static Sprite GateKey
+    {
+        get { return gateKey != null ? gateKey : (gateKey = BuildGateKey()); }
     }
 
     // ----- HUD icons ------------------------------------------------------
@@ -315,6 +322,43 @@ public static class GameplaySprites
     }
 
     // ----- primitives -----------------------------------------------------
+
+    // An old-fashioned key: ring, shaft and two teeth, with a dark outline so
+    // it stands out against the marsh.
+    private static Sprite BuildGateKey()
+    {
+        const int size = 32;
+        Color[] pixels = Blank(size);
+
+        Color gold = new Color(1f, 0.82f, 0.32f, 1f);
+        Color edge = new Color(0.25f, 0.15f, 0.04f, 1f);
+
+        Vector2 ringCentre = new Vector2(10.5f, 21.5f);
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), ringCentre);
+
+                if (distance > 7.5f || distance < 2.5f) { continue; }
+
+                Set(pixels, size, x, y, distance > 6f || distance < 4f ? edge : gold);
+            }
+        }
+
+        // Shaft down to the right, then the teeth.
+        FillRect(pixels, size, 14, 5, 17, 18, edge);
+        FillRect(pixels, size, 15, 6, 16, 17, gold);
+
+        FillRect(pixels, size, 17, 8, 22, 10, edge);
+        FillRect(pixels, size, 17, 9, 21, 9, gold);
+
+        FillRect(pixels, size, 17, 12, 21, 14, edge);
+        FillRect(pixels, size, 17, 13, 20, 13, gold);
+
+        return Finish(pixels, size, size, 32f);
+    }
 
     // A fat exclamation mark with a dark outline, so it reads over any tile.
     private static Sprite BuildAlert()

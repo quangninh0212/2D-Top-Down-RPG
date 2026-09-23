@@ -44,6 +44,27 @@ public abstract class NpcBrain : MonoBehaviour
     private float alertMarkerUntil;
     private float investigateUntil;
 
+    // Looking around and steering both cost raycasts, and neither answer
+    // changes meaningfully from one frame to the next. Both are refreshed on a
+    // fixed beat instead of every frame, which is what keeps a room full of
+    // NPCs off the garbage collector on a phone.
+    private const float PerceptionInterval = 0.1f;
+    private const float SteerInterval = 0.12f;
+
+    private float nextPerceptionTime;
+    private bool clearLineToPlayer;
+
+    private Vector2 steerWanted;
+    private Vector2 steerResult;
+    private float nextSteerTime;
+
+    // A clear line from here to the player, as of the last perception beat.
+    // Subclasses use this rather than asking the physics engine again.
+    protected bool HasClearLineToPlayer
+    {
+        get { return clearLineToPlayer; }
+    }
+
     // Read by the smoke test and by the subclasses.
     public BrainState State
     {
@@ -138,6 +159,13 @@ public abstract class NpcBrain : MonoBehaviour
         }
 
         Vector2 playerPosition = player.transform.position;
+
+        if (Time.time >= nextPerceptionTime)
+        {
+            nextPerceptionTime = Time.time + PerceptionInterval;
+            clearLineToPlayer = NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+        }
+
         bool canSee = CanSee(playerPosition);
 
         if (canSee)
@@ -162,7 +190,7 @@ public abstract class NpcBrain : MonoBehaviour
     {
         if (Vector2.Distance(transform.position, playerPosition) > sightRange) { return false; }
 
-        return NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+        return HasClearLineToPlayer;
     }
 
     // First sight after losing track: shout, and flag it on screen.
@@ -340,7 +368,19 @@ public abstract class NpcBrain : MonoBehaviour
             return;
         }
 
-        pathfinding.MoveTo(NpcSenses.Avoid(gameObject, transform.position, direction, 1.1f));
+        Vector2 wanted = direction.normalized;
+
+        // Steered again when the NPC wants to go somewhere appreciably
+        // different (more than about 20 degrees off), or when the beat comes
+        // round; otherwise the last answer still holds.
+        if (Time.time >= nextSteerTime || Vector2.Dot(wanted, steerWanted) < 0.94f)
+        {
+            nextSteerTime = Time.time + SteerInterval;
+            steerWanted = wanted;
+            steerResult = NpcSenses.Avoid(gameObject, transform.position, wanted, 1.1f);
+        }
+
+        pathfinding.MoveTo(steerResult);
     }
 
     protected void Hold()

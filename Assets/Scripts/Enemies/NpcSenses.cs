@@ -5,6 +5,24 @@ using UnityEngine;
 // default layer, so the queries filter by component rather than by layer mask.
 public static class NpcSenses
 {
+    // Every query writes into these instead of returning a fresh array. A
+    // handful of NPCs each looking around several times a frame was allocating
+    // thousands of short-lived arrays a second, which on a phone shows up as
+    // the garbage collector stuttering the game rather than as low frame rate.
+    private const int MaxHits = 24;
+
+    private static readonly RaycastHit2D[] RayHits = new RaycastHit2D[MaxHits];
+    private static readonly Collider2D[] OverlapHits = new Collider2D[MaxHits];
+
+    // How many physics queries the brains have asked for. Counted so the cost
+    // of the AI can be measured rather than guessed at.
+    public static long QueryCount { get; private set; }
+
+    public static void ResetQueryCount()
+    {
+        QueryCount = 0;
+    }
+
     // A clear line between two points: walls and props block it, triggers,
     // the player and other NPCs do not.
     public static bool HasLineOfSight(GameObject self, Vector2 from, Vector2 to)
@@ -14,19 +32,21 @@ public static class NpcSenses
 
         if (distance <= 0.05f) { return true; }
 
+        QueryCount++;
+
         // A ray that starts inside a collider reports that collider by default,
         // which would have every NPC blinded by the arena-sized volumes it is
         // standing in. Only what the line actually crosses counts.
         bool queriesStartInColliders = Physics2D.queriesStartInColliders;
         Physics2D.queriesStartInColliders = false;
 
-        RaycastHit2D[] hits = Physics2D.RaycastAll(from, delta / distance, distance);
+        int count = Physics2D.RaycastNonAlloc(from, delta / distance, RayHits, distance);
 
         Physics2D.queriesStartInColliders = queriesStartInColliders;
 
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < count; i++)
         {
-            if (Blocks(hits[i].collider, self)) { return false; }
+            if (Blocks(RayHits[i].collider, self)) { return false; }
         }
 
         return true;
@@ -36,11 +56,13 @@ public static class NpcSenses
     // slime commits to a flanking spot.
     public static bool IsFree(GameObject self, Vector2 point, float radius)
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(point, radius);
+        QueryCount++;
 
-        for (int i = 0; i < hits.Length; i++)
+        int count = Physics2D.OverlapCircleNonAlloc(point, radius, OverlapHits);
+
+        for (int i = 0; i < count; i++)
         {
-            if (Blocks(hits[i], self)) { return false; }
+            if (Blocks(OverlapHits[i], self)) { return false; }
         }
 
         return true;

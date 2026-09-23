@@ -44,10 +44,14 @@ public class GuidePanel : MonoBehaviour
         PixelUI.Stretch(shade.rectTransform);
         shade.color = new Color(0f, 0f, 0f, 0.8f);
 
-        RectTransform panel = PixelUI.NewPanel("Panel", group.transform, new Vector2(1380f, 720f));
+        RectTransform panel = PixelUI.NewPanel("Panel", group.transform, new Vector2(1380f, 800f));
 
         PixelUI.NewTitle("Heading", panel, "HƯỚNG DẪN", 56)
-               .rectTransform.anchoredPosition = new Vector2(0f, 288f);
+               .rectTransform.anchoredPosition = new Vector2(0f, 330f);
+
+        // The story sits across the top, on its own: it is the one entry here
+        // that is about the world rather than about a button.
+        AddEntry(panel, new Entry("CỐT TRUYỆN", StoryContent.Summary), new Vector2(0f, 248f), 1250f);
 
         for (int i = 0; i < Entries.Length; i++)
         {
@@ -55,29 +59,29 @@ public class GuidePanel : MonoBehaviour
             int row = rightColumn ? i - Entries.Length / 2 : i;
 
             float x = rightColumn ? 340f : -340f;
-            float y = 180f - row * 118f;
+            float y = 110f - row * 118f;
 
-            AddEntry(panel, Entries[i], new Vector2(x, y));
+            AddEntry(panel, Entries[i], new Vector2(x, y), 600f);
         }
 
-        PixelUI.NewButton("Close", panel, "ĐÓNG", new Vector2(360f, 84f), new Vector2(0f, -290f), Close);
+        PixelUI.NewButton("Close", panel, "ĐÓNG", new Vector2(360f, 84f), new Vector2(0f, -340f), Close);
 
         PixelUI.SetGroupVisible(group, false);
     }
 
-    private static void AddEntry(Transform parent, Entry entry, Vector2 position)
+    private static void AddEntry(Transform parent, Entry entry, Vector2 position, float width)
     {
         Text title = PixelUI.NewBody(entry.Title, parent, entry.Title, 32);
         title.alignment = TextAnchor.UpperLeft;
         title.fontStyle = FontStyle.Bold;
-        title.rectTransform.sizeDelta = new Vector2(600f, 40f);
+        title.rectTransform.sizeDelta = new Vector2(width, 40f);
         title.rectTransform.anchoredPosition = position;
         title.color = PixelUI.Gold;
 
         Text body = PixelUI.NewBody(entry.Title + "Body", parent, entry.Body, 26);
         body.alignment = TextAnchor.UpperLeft;
         body.horizontalOverflow = HorizontalWrapMode.Wrap;
-        body.rectTransform.sizeDelta = new Vector2(600f, 70f);
+        body.rectTransform.sizeDelta = new Vector2(width, 70f);
         body.rectTransform.anchoredPosition = position + new Vector2(0f, -46f);
         body.color = PixelUI.Cream;
     }

@@ -48,6 +48,39 @@ public static class SceneFlow
             save.MarkRunStartedAt(GameScenes.Scene1);
         }
 
+        // A new run opens with the story, which then drops the player into the
+        // first level. Continuing a saved run goes straight back to the level.
+        GoToStory(false);
+    }
+
+    // ----- story ----------------------------------------------------------
+
+    // True while the story screen is showing the ending rather than the
+    // opening; it decides both the text and where the screen leads next.
+    public static bool StoryIsEpilogue { get; private set; }
+
+    public static void GoToStory(bool epilogue)
+    {
+        StoryIsEpilogue = epilogue;
+
+        ResetTimeScale();
+        MobileInput.ResetAll();
+        LeaveGameplay();
+
+        SceneManager.LoadScene(GameScenes.Story);
+    }
+
+    // Where the story screen hands over to: into the game at the start, on to
+    // the victory screen at the end.
+    public static void ContinueFromStory()
+    {
+        if (StoryIsEpilogue)
+        {
+            StoryIsEpilogue = false;
+            GoToVictory();
+            return;
+        }
+
         Load(GameScenes.Scene1, "", false);
     }
 

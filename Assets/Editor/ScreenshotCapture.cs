@@ -58,34 +58,45 @@ public static class ScreenshotCapture
                 step++;
                 break;
 
+            // The crossroads first, while the run is still alive: its HUD is
+            // the one that shows a clock instead of a body count.
+            case 1: Load(GameScenes.Scene3); step++; Wait(2.5f); break;
+            case 2: Capture("objective-survive.png"); step++; Wait(1.5f); break;
+
+            case 3: Load(GameScenes.Scene1); step++; Wait(2f); break;
+
             // Both states are reached the way a player reaches them, so the
             // pictures show what the game really does - touch controls hidden
             // included - rather than a panel switched on by hand.
-            case 1: Die(); step++; Wait(2.6f); break;
-            case 2: Capture("game-over.png"); step++; Wait(1.5f); break;
+            case 4: Die(); step++; Wait(2.6f); break;
+            case 5: Capture("game-over.png"); step++; Wait(1.5f); break;
 
-            case 3: ShowWin(); step++; Wait(1.2f); break;
-            case 4: Capture("win-overlay.png"); step++; Wait(4f); break;
+            case 6: ShowWin(); step++; Wait(1.2f); break;
+            case 7: Capture("win-overlay.png"); step++; Wait(4f); break;
 
-            case 5: EnsureVictoryScene(); step++; Wait(1.5f); break;
-            case 6: Capture("victory.png"); step++; Wait(1.5f); break;
+            case 8: EnsureVictoryScene(); step++; Wait(1.5f); break;
+            case 9: Capture("victory.png"); step++; Wait(1.5f); break;
 
-            case 7: Go(GameScenes.Progress); step++; Wait(1.5f); break;
-            case 8: Capture("progress.png"); step++; Wait(1.5f); break;
+            case 10: Go(GameScenes.Progress); step++; Wait(1.5f); break;
+            case 11: Capture("progress.png"); step++; Wait(1.5f); break;
 
-            case 9: Go(GameScenes.Achievements); step++; Wait(1.5f); break;
-            case 10: Capture("achievements.png"); step++; Wait(1.5f); break;
+            case 12: Go(GameScenes.Achievements); step++; Wait(1.5f); break;
+            case 13: Capture("achievements.png"); step++; Wait(1.5f); break;
 
-            case 11: Go(GameScenes.Settings); step++; Wait(1.5f); break;
-            case 12: Capture("settings.png"); step++; Wait(1.5f); break;
+            case 14: Go(GameScenes.Settings); step++; Wait(1.5f); break;
+            case 15: Capture("settings.png"); step++; Wait(1.5f); break;
+
+            // The opening, part way through typing itself out.
+            case 16: ShowStory(); step++; Wait(2.2f); break;
+            case 17: Capture("story.png"); step++; Wait(1.5f); break;
 
             // The two branded screens. The splash moves on by itself after a
             // few seconds, so it is caught while it is still up.
-            case 13: Load(GameScenes.Splash); step++; Wait(1.2f); break;
-            case 14: Capture("splash.png"); step++; Wait(1.5f); break;
+            case 18: Load(GameScenes.Splash); step++; Wait(1.2f); break;
+            case 19: Capture("splash.png"); step++; Wait(1.5f); break;
 
-            case 15: Load(GameScenes.MainMenu); step++; Wait(1.5f); break;
-            case 16: Capture("main-menu.png"); step++; Wait(1.5f); break;
+            case 20: Load(GameScenes.MainMenu); step++; Wait(1.5f); break;
+            case 21: Capture("main-menu.png"); step++; Wait(1.5f); break;
 
             default: Finish(); break;
         }
@@ -126,6 +137,11 @@ public static class ScreenshotCapture
         if (runtime != null && runtime.GameOver != null) { runtime.GameOver.Hide(); }
 
         VictorySequence.Begin();
+    }
+
+    private static void ShowStory()
+    {
+        SceneFlow.GoToStory(false);
     }
 
     private static void EnsureVictoryScene()

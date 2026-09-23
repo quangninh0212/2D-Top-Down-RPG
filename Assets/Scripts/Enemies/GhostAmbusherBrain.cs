@@ -54,7 +54,7 @@ public class GhostAmbusherBrain : NpcBrain
     {
         if (Vector2.Distance(transform.position, playerPosition) > ambushRange) { return false; }
 
-        return NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+        return HasClearLineToPlayer;
     }
 
     protected override void NoticePlayer(Vector2 playerPosition)
@@ -85,7 +85,7 @@ public class GhostAmbusherBrain : NpcBrain
 
     protected override void Engage(Vector2 playerPosition, float distance)
     {
-        bool clearLine = NpcSenses.HasLineOfSight(gameObject, transform.position, playerPosition);
+        bool clearLine = HasClearLineToPlayer;
 
         // Too far, or cut off: reappear behind the player rather than walk.
         if ((distance > blinkTriggerRange || !clearLine) && TryBlinkBehind(playerPosition)) { return; }

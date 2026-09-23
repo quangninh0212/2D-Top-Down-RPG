@@ -48,7 +48,9 @@ public class VictorySequence : MonoBehaviour
         yield return new WaitForSeconds(0.8f);
 
         running = false;
-        SceneFlow.GoToVictory();
+
+        // The ending is told before the totals are shown.
+        SceneFlow.GoToStory(true);
 
         Destroy(gameObject);
     }

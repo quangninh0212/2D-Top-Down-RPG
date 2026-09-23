@@ -108,6 +108,8 @@ public static class ProjectValidator
         report.AppendLine();
         report.AppendLine("Stand-alone screens:");
 
+        CheckSceneHasController(GameScenes.Story, typeof(StoryScreenController), report, failures);
+
         System.Type[] controllers =
         {
             typeof(ProgressScreenController),
@@ -138,6 +140,26 @@ public static class ProjectValidator
             report.AppendLine("  " + sceneName + ": " + (hasController ? "ok" : "no controller") +
                               " (" + scene.rootCount + " root object(s))");
         }
+    }
+
+    private static void CheckSceneHasController(string sceneName, System.Type controller,
+                                                StringBuilder report, List<string> failures)
+    {
+        string path = "Assets/Scenes/" + sceneName + ".unity";
+
+        if (!File.Exists(path))
+        {
+            failures.Add("Scene missing: " + path);
+            report.AppendLine("  " + sceneName + ": MISSING");
+            return;
+        }
+
+        EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+        bool hasController = Object.FindObjectOfType(controller) != null;
+
+        if (!hasController) { failures.Add(sceneName + " has no " + controller.Name); }
+
+        report.AppendLine("  " + sceneName + ": " + (hasController ? "ok" : "no controller"));
     }
 
     // Each enemy type needs its brain, or it falls back to wandering at random.
@@ -525,6 +547,20 @@ public static class ProjectValidator
         if (runes == 0) { failures.Add(sceneName + " has no speed rune (collision object X)"); }
         if (traps == 0) { failures.Add(sceneName + " has no spike trap (collision object Y)"); }
         if (chests == 0) { failures.Add(sceneName + " has no treasure chest (collision object Z)"); }
+
+        // A level whose gate is opened by a key is unfinishable without it.
+        LevelInfo info;
+        if (!LevelCatalog.TryGet(sceneName, out info) || info.Goal != LevelGoal.FindKey) { return; }
+
+        int keys = 0;
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            keys += root.GetComponentsInChildren<GateKey>(true).Length;
+        }
+
+        report.AppendLine("  gate keys: " + keys + " (goal: find the key)");
+
+        if (keys == 0) { failures.Add(sceneName + " needs a gate key but has none"); }
     }
 
     private static int CountOutlineVertices(CompositeCollider2D composite)

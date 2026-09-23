@@ -490,16 +490,17 @@ public class GameplayRuntime : MonoBehaviour
         skillStatusText.text = SkillLine();
     }
 
+    // Each level states its own goal, because they no longer all ask for the
+    // same thing: clear the room, hold out, or find the key.
     private static string ObjectiveLine()
     {
-        if (FindObjectOfType<BossHealth>() != null) { return "MỤC TIÊU: ĐÁNH BẠI SOUL WARDEN"; }
-
         LevelManager level = LevelManager.Instance;
-        if (level == null) { return ""; }
+        if (level == null)
+        {
+            return FindObjectOfType<BossHealth>() != null ? "MỤC TIÊU: ĐÁNH BẠI SOUL WARDEN" : "";
+        }
 
-        if (level.GateOpen) { return "CỔNG ĐÃ MỞ - TIẾN TỚI KHU VỰC TIẾP THEO"; }
-
-        return "QUÁI CÒN LẠI: " + level.RemainingMandatoryEnemies + " / " + level.TotalMandatoryEnemies;
+        return level.ObjectiveLine;
     }
 
     private static string EffectsLine()

@@ -18,6 +18,50 @@ public class LevelManager : MonoBehaviour
     private bool gateOpen;
     private bool restored;
 
+    // Survive levels only: counts down once the level is under way.
+    private float surviveRemaining;
+    private bool surviving;
+
+    public LevelGoal Goal
+    {
+        get { return hasInfo ? info.Goal : LevelGoal.ClearEnemies; }
+    }
+
+    public float SurviveRemaining
+    {
+        get { return surviveRemaining; }
+    }
+
+    public bool IsSurviving
+    {
+        get { return surviving; }
+    }
+
+    // What the HUD puts on its objective line, in the words of this level.
+    public string ObjectiveLine
+    {
+        get
+        {
+            if (gateOpen) { return "CỔNG ĐÃ MỞ - TIẾN TỚI KHU VỰC TIẾP THEO"; }
+
+            switch (Goal)
+            {
+                case LevelGoal.DefeatBoss:
+                    return "MỤC TIÊU: ĐÁNH BẠI SOUL WARDEN";
+
+                case LevelGoal.Survive:
+                    return "SỐNG SÓT: " + Mathf.CeilToInt(Mathf.Max(0f, surviveRemaining)) + "s" +
+                           "     QUÁI: " + RemainingMandatoryEnemies;
+
+                case LevelGoal.FindKey:
+                    return "TÌM CHÌA KHOÁ MỞ CỔNG";
+
+                default:
+                    return "QUÁI CÒN LẠI: " + RemainingMandatoryEnemies + " / " + TotalMandatoryEnemies;
+            }
+        }
+    }
+
     public bool GateOpen
     {
         get { return gateOpen; }
@@ -58,6 +102,7 @@ public class LevelManager : MonoBehaviour
         Destructible.OnDestructibleDestroyed -= HandleDestructibleDestroyed;
         SpeedRune.OnConsumed -= HandleRuneConsumed;
         TreasureChest.OnOpened -= HandleChestOpened;
+        GateKey.OnTaken -= HandleKeyTaken;
 
         if (Instance == this) { Instance = null; }
     }
@@ -78,15 +123,28 @@ public class LevelManager : MonoBehaviour
         Destructible.OnDestructibleDestroyed += HandleDestructibleDestroyed;
         SpeedRune.OnConsumed += HandleRuneConsumed;
         TreasureChest.OnOpened += HandleChestOpened;
+        GateKey.OnTaken += HandleKeyTaken;
 
         // A level that was already finished stays finished, even on a revisit.
-        if (state.completed || state.gateOpen || RemainingMandatoryEnemies == 0)
+        // An unfinished one opens only on its own terms: an empty room means
+        // nothing in a level whose gate is behind a key.
+        bool alreadyDone = state.completed || state.gateOpen;
+        bool nothingLeftToKill = Goal != LevelGoal.FindKey && Goal != LevelGoal.DefeatBoss &&
+                                 RemainingMandatoryEnemies == 0;
+
+        if (alreadyDone || nothingLeftToKill)
         {
             OpenGate(false);
         }
         else
         {
             SetGateVisuals(false);
+
+            if (Goal == LevelGoal.Survive)
+            {
+                surviveRemaining = info.SurviveSeconds;
+                surviving = true;
+            }
         }
 
         state.visited = true;
@@ -176,11 +234,22 @@ public class LevelManager : MonoBehaviour
 
         yield return new WaitForSeconds(introDelay);
 
+        // The banner tells the player where they are and what this place is;
+        // the objective follows as a toast a moment later, so the two do not
+        // compete for the same line.
         string subtitle = state != null && state.completed
             ? "Khu vực đã hoàn thành"
-            : info.Objective;
+            : StoryContent.LoreFor(info.Number);
+
+        if (string.IsNullOrEmpty(subtitle)) { subtitle = info.Objective; }
 
         GameMessages.Banner(info.DisplayName, subtitle);
+
+        if (state == null || !state.completed)
+        {
+            yield return new WaitForSeconds(2.6f);
+            GameMessages.Toast("MỤC TIÊU: " + info.Objective.ToUpper());
+        }
     }
 
     // ----- events ---------------------------------------------------------
@@ -196,10 +265,45 @@ public class LevelManager : MonoBehaviour
 
         if (!enemy.CountsTowardObjective || gateOpen) { return; }
 
+        // Clearing the room finishes a kill level, and is also an honest way
+        // out of a survival one. It does nothing for a key level: the gate
+        // there is locked, not guarded.
+        if (Goal == LevelGoal.FindKey || Goal == LevelGoal.DefeatBoss) { return; }
+
         if (RemainingMandatoryEnemies == 0)
         {
+            surviving = false;
             OpenGate(true);
         }
+    }
+
+    // ----- the two other goals --------------------------------------------
+
+    private void Update()
+    {
+        if (!surviving || gateOpen) { return; }
+
+        PlayerHealth health = PlayerHealth.Instance;
+        if (health != null && health.isDead) { return; }
+
+        surviveRemaining -= Time.deltaTime;
+
+        if (surviveRemaining > 0f) { return; }
+
+        surviveRemaining = 0f;
+        surviving = false;
+
+        GameMessages.Banner("ĐÃ SỐNG SÓT!", "Cổng phía trước đã mở");
+        OpenGate(true);
+    }
+
+    private void HandleKeyTaken(GateKey key)
+    {
+        if (key == null || key.gameObject.scene != gameObject.scene) { return; }
+
+        if (state != null) { state.MarkRemoved(key.PersistentId); }
+
+        if (!gateOpen) { OpenGate(true); }
     }
 
     // A taken rune or an opened chest stays gone, or walking out and back in
