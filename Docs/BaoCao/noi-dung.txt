@@ -1,0 +1,213 @@
+H1|CHƯƠNG 1. GIỚI THIỆU ĐỀ TÀI
+H2|1.1. Đặt vấn đề
+P|Android là nền tảng chơi game phổ biến nhất hiện nay, và phần lớn người chơi tiếp cận trò chơi qua màn hình cảm ứng thay vì bàn phím hay tay cầm. Điều này đặt ra một bài toán thiết kế riêng: trò chơi phải điều khiển được bằng hai ngón tay cái, phải đọc được trên màn hình nhỏ, và phải chạy mượt trên phần cứng hạn chế hơn máy tính rất nhiều.
+P|Thể loại nhập vai hành động nhìn từ trên xuống (top-down action RPG) phù hợp với các ràng buộc đó: góc nhìn cố định giúp người chơi bao quát được tình huống, thao tác chỉ gồm di chuyển và tấn công, nhưng chiều sâu lại đến từ cách bố trí quái vật, vật phẩm và mục tiêu của từng màn chơi.
+P|Nhóm chọn xây dựng một trò chơi hoàn chỉnh thay vì một bản demo kỹ thuật. "Hoàn chỉnh" ở đây được hiểu là: người chơi mở ứng dụng lên, xem phần mở đầu, chơi hết năm màn, đánh boss, thắng hoặc thua, xem lại thành tích của mình, và có thể thoát ra rồi quay lại chơi tiếp đúng chỗ đã dừng.
+H2|1.2. Mục tiêu của đồ án
+P|Đồ án hướng tới một sản phẩm game 2D chạy được trên điện thoại Android với các mục tiêu cụ thể sau:
+B|Có cốt truyện và thế giới riêng, được kể trong game chứ không chỉ nằm trong báo cáo.
+B|Có ít nhất năm cấp độ chơi khác nhau về bản đồ, loại quái và nhiệm vụ.
+B|Có cơ chế chiến đấu đa dạng: nhiều cách tấn công và nhiều cách phòng thủ.
+B|NPC có hành vi thông minh, không chỉ đi ngẫu nhiên rồi lao vào người chơi.
+B|Lưu được tiến trình sau mỗi cấp độ, kể cả khi người chơi tắt hẳn ứng dụng.
+B|Có đầy đủ các màn hình của một sản phẩm thương mại: mở đầu, trang chủ, cài đặt, thắng, thua, thành tích.
+B|Chạy mượt trên thiết bị thật, không giật hình và không thoát đột ngột.
+H2|1.3. Phạm vi
+P|Đồ án tập trung vào sản phẩm game 2D dành cho một người chơi, chạy hoàn toàn trên thiết bị và không yêu cầu kết nối mạng. Các nội dung sau nằm ngoài phạm vi: chơi nhiều người qua mạng, mua bán trong ứng dụng, hệ thống tài khoản người dùng và bảng xếp hạng trực tuyến.
+H2|1.4. Bố cục báo cáo
+P|Chương 1 giới thiệu đề tài. Chương 2 trình bày các công nghệ được sử dụng. Chương 3 mô tả thiết kế trò chơi: cốt truyện, thế giới, nhân vật và các cơ chế chơi. Chương 4 trình bày kiến trúc phần mềm. Chương 5 đi vào cài đặt một số chức năng nổi bật. Chương 6 trình bày cách kiểm thử và kết quả đo đạc. Chương 7 kết luận và nêu hướng phát triển.
+H1|CHƯƠNG 2. CÔNG NGHỆ SỬ DỤNG
+P|Toàn bộ trò chơi được xây dựng trên Unity, sử dụng bộ công cụ 2D của engine này. Bảng dưới đây liệt kê các thành phần chính và vai trò của từng thành phần trong sản phẩm.
+TBLCAP|Các công nghệ sử dụng trong đồ án
+TBLW|0.30,0.18,0.52
+TBLH|Thành phần;Phiên bản;Vai trò trong trò chơi
+TBLR|Unity Engine;2022.3.3f1 (LTS);Nền tảng phát triển, kết xuất đồ hoạ, vật lý 2D và đóng gói Android
+TBLR|Universal Render Pipeline 2D;14.x;Kết xuất và hệ thống ánh sáng 2D cho các màn chơi
+TBLR|Input System;1.7;Nhận thao tác cảm ứng và bàn phím qua cùng một lớp trừu tượng
+TBLR|Cinemachine;2.9;Điều khiển camera và khung nhìn theo từng màn
+TBLR|Tilemap và Composite Collider 2D;Tích hợp sẵn;Vẽ bản đồ và sinh va chạm cho tường, vật cản
+TBLR|uGUI (Unity UI);Tích hợp sẵn;Toàn bộ giao diện, được dựng bằng mã nguồn
+TBLR|Unity Test Framework;1.1;Chạy các bài kiểm thử tự động
+TBLR|C#;.NET Standard 2.1;Ngôn ngữ lập trình cho toàn bộ mã nguồn
+H2|2.1. Vật lý 2D và hệ thống va chạm
+P|Mọi tương tác trong trò chơi đều đi qua hệ thống vật lý 2D của Unity. Nhân vật, quái vật và đạn đều có Rigidbody2D cùng Collider2D; tường và vật cản dùng Tilemap Collider 2D được gộp lại bằng Composite Collider 2D để giảm số hình va chạm. Các vật phẩm, bẫy và vùng cấm dùng collider ở chế độ trigger, tức là phát hiện được va chạm nhưng không chặn đường đi.
+H2|2.2. Điều khiển cảm ứng
+P|Trò chơi được thiết kế cho màn hình cảm ứng: cần điều khiển ảo nằm ở nửa dưới bên trái và tự đặt lại vị trí theo nơi ngón tay chạm vào, các nút tấn công, lướt, đổi vũ khí và kỹ năng nằm ở bên phải. Một lớp trung gian gom toàn bộ thao tác cảm ứng lại, nên phần mã điều khiển nhân vật không cần biết người chơi đang dùng cảm ứng hay bàn phím.
+H2|2.3. Giao diện dựng bằng mã nguồn
+P|Một lựa chọn kỹ thuật quan trọng của đồ án là toàn bộ giao diện được dựng bằng mã nguồn thông qua một lớp tiện ích chung, thay vì kéo thả trong Editor. Cách làm này có ba lợi ích. Thứ nhất, giao diện được sinh lại y hệt nhau ở mọi màn hình và mọi tỉ lệ. Thứ hai, các bài kiểm thử tự động có thể dựng giao diện lên rồi kiểm tra từng nút một. Thứ ba, các tệp scene rất nhẹ và không bị xung đột khi nhiều người cùng sửa.
+H2|2.4. Quy trình đóng gói Android
+P|Việc đóng gói được thực hiện bằng một lớp công cụ riêng, gọi được từ dòng lệnh. Nhờ vậy toàn bộ quy trình kiểm thử và đóng gói có thể chạy tự động: mở dự án ở chế độ không giao diện, chạy các bài kiểm thử, rồi sinh tệp APK. Tệp cài đặt cuối cùng có định danh com.quangninhhongphong.soulboundgate và dung lượng khoảng 49,9 MB.
+H1|CHƯƠNG 3. THIẾT KẾ TRÒ CHƠI
+H2|3.1. Cốt truyện
+P|Vương quốc Aldmoor đã sụp đổ từ lâu. Thứ còn lại giữa đồng cỏ là một cánh cổng đá với ánh sáng xanh không bao giờ tắt, người ta gọi đó là Cổng Linh Hồn. Mỗi người ngã xuống trên vùng đất này đều bị cánh cổng giữ lại, trở thành một ngọn đèn nhỏ trên vòm đá. Canh giữ cổng là Soul Warden, kẻ đã tự nguyện mang trên mình mọi linh hồn nó bắt được và vì thế không còn chết được nữa.
+P|Người chơi vào vai người cuối cùng còn cầm được Thanh Kiếm Ràng Buộc, đi qua năm vùng đất để tới cánh cổng và trả những linh hồn bị giam về nơi họ thuộc về. Cốt truyện được kể ở ba chỗ: màn mở đầu trước khi vào game, một dòng giới thiệu riêng cho mỗi vùng đất khi người chơi bước vào, và đoạn kết sau khi hạ được Soul Warden.
+FIG|story.png|Màn hình kể chuyện mở đầu, chữ hiện dần từng ký tự
+H2|3.2. Thế giới và các vùng đất
+P|Năm màn chơi tương ứng với năm vùng đất, khác nhau về bản đồ, ánh sáng, loại quái và nhiệm vụ. Độ khó tăng dần: hai màn đầu dạy người chơi cách đánh gần và cách né đòn từ xa, hai màn giữa buộc phải xoay xở với tình huống hỗn hợp, màn cuối là trận đấu boss.
+TBLCAP|Năm vùng đất trong trò chơi
+TBLW|0.07,0.25,0.21,0.28,0.19
+TBLH|Màn;Tên vùng đất;Quái vật;Nhiệm vụ;Phần thưởng
+TBLR|1;Forgotten Meadow;5 Blue Slime;Tiêu diệt toàn bộ;10 vàng, mở bán Cung
+TBLR|2;Shadow Grove;5 Grape;Tiêu diệt toàn bộ;20 vàng, mở bán Trượng
+TBLR|3;Whispering Crossroads;3 Slime và 4 Grape;Sống sót 45 giây;25 vàng
+TBLR|4;Haunted Marsh;4 Ghost;Tìm chìa khoá mở cổng;30 vàng
+TBLR|5;Gate of Souls;Boss Soul Warden;Đánh bại boss;Kết thúc trò chơi
+P|Ba loại nhiệm vụ khác nhau là một lựa chọn thiết kế có chủ đích. Nếu cả năm màn đều là tiêu diệt hết quái thì người chơi chỉ lặp lại đúng một hành vi; khi màn 3 bắt phải cầm cự và màn 4 bắt phải đi tìm, cách chơi buộc phải thay đổi theo.
+FIG|objective-survive.png|HUD màn 3 hiển thị đồng hồ đếm ngược của nhiệm vụ sống sót
+H2|3.3. Nhân vật người chơi
+P|Nhân vật có ba điểm máu và ba điểm thể lực. Máu mất đi khi chạm quái hoặc trúng đạn, và được hồi bằng vật phẩm hoặc mua tại cửa hàng. Thể lực dùng cho động tác lướt để né đòn, và tự hồi lại sau một khoảng thời gian. Máu về 0 là kết thúc lượt chơi.
+P|Về di chuyển, nhân vật đi theo tám hướng với tốc độ cơ bản cố định, nhưng tốc độ này chịu ảnh hưởng của các hiệu ứng: rune tăng tốc nhân tốc độ lên 1,6 lần trong 5 giây, bẫy gai làm chậm còn một nửa trong 2,5 giây. Hai hiệu ứng có thể chồng lên nhau, khi đó hệ số được nhân với nhau.
+H2|3.4. Cơ chế tấn công và phòng thủ
+P|Người chơi có ba cách tấn công và hai cách phòng thủ, mỗi cách phù hợp với một tình huống khác nhau.
+TBLCAP|Các cơ chế tấn công và phòng thủ của nhân vật
+TBLW|0.20,0.16,0.64
+TBLH|Cơ chế;Loại;Mô tả
+TBLR|Kiếm;Tấn công;Chém cận chiến, sát thương cao, phải áp sát mục tiêu
+TBLR|Cung;Tấn công;Bắn mũi tên bay thẳng, đánh được từ xa, cần ngắm đúng hướng
+TBLR|Trượng;Tấn công;Bắn tia phép đi xa, hồi chiêu chậm hơn hai vũ khí kia
+TBLR|Khiên (phím Q);Phòng thủ;Bong bóng chắn trọn một đòn bất kỳ trong 3 giây, hồi chiêu 9 giây
+TBLR|Choáng (phím E);Phòng thủ;Làm mọi quái trong bán kính 5 đơn vị đứng yên 2,5 giây, hồi chiêu 12 giây
+TBLR|Lướt;Cơ động;Di chuyển nhanh để né đòn, tiêu tốn 1 điểm thể lực
+P|Khiên và choáng là hai cách phòng thủ khác hẳn nhau về bản chất: khiên chịu đòn thay người chơi, còn choáng vô hiệu hoá nguồn gây sát thương. Cả hai đều có vòng hồi chiêu hiển thị trực tiếp trên nút bấm.
+H2|3.5. Vật phẩm và các đối tượng va chạm
+P|Mỗi màn chơi được đặt ba đối tượng đặc biệt mà người chơi có thể va chạm, cùng một vùng cấm dành cho quái vật. Bảng dưới liệt kê tám hiệu ứng sinh ra từ ba đối tượng đó.
+TBLCAP|Hiệu ứng khi nhân vật va chạm với ba đối tượng đặc biệt
+TBLW|0.26,0.74
+TBLH|Đối tượng;Hiệu ứng
+TBLR|Rune tăng tốc (X);1. Tăng tốc độ di chuyển 1,6 lần trong 5 giây
+TBLR|Rune tăng tốc (X);2. Rune biến mất kèm vòng sáng lan ra và không mọc lại trong lượt chơi
+TBLR|Bẫy gai (Y);3. Mất 1 máu khi không có khiên
+TBLR|Bẫy gai (Y);4. Bị làm chậm còn một nửa tốc độ trong 2,5 giây
+TBLR|Bẫy gai (Y);5. Phá vỡ khiên đang bật thay vì trừ máu
+TBLR|Rương báu (Z);6. Nổ kèm hiệu ứng hình ảnh và rung màn hình
+TBLR|Rương báu (Z);7. Cộng 10 vàng vào túi người chơi
+TBLR|Rương báu (Z);8. Rơi ra một vật phẩm hồi máu
+P|Vùng cấm là một khu vực được đánh dấu đỏ trên bản đồ. Khi một con quái bắt đầu đi vào đó, trò chơi phát tiếng cảnh báo liên tiếp bốn lần kèm hiệu ứng nhấp nháy và một dòng thông báo; số lần cảnh báo có thể cấu hình trong khoảng từ ba đến sáu.
+H2|3.6. Kinh tế và cửa hàng
+P|Vàng thu được từ quái vật, rương báu và phần thưởng hoàn thành màn. Cửa hàng ở trang chủ cho phép mua vũ khí mới và hồi đầy máu với giá 5 vàng. Cung và Trượng chỉ xuất hiện trong cửa hàng sau khi người chơi hoàn thành màn 1 và màn 2, nên tiến trình chơi và tiến trình trang bị gắn với nhau.
+H2|3.7. Âm thanh
+P|Trò chơi có 29 hiệu ứng âm thanh và 4 bản nhạc nền. Toàn bộ đều được sinh ra bằng mã nguồn từ các bộ dao động và nhiễu cơ bản rồi ghi thành tệp WAV, không tải về từ bất kỳ nguồn nào. Cách làm này bảo đảm phần âm thanh là sản phẩm của nhóm và không vướng vấn đề bản quyền.
+P|Người chơi có thể tắt riêng hiệu ứng âm thanh và nhạc nền bằng hai cặp công tắc trên HUD hoặc trong màn hình cài đặt; trạng thái này được ghi nhớ giữa các lần mở ứng dụng.
+H2|3.8. Nhận diện hình ảnh
+P|Nhóm tự thiết kế logo và ảnh key art cho trò chơi. Logo được dùng làm tiêu đề trang chủ, còn ảnh vuông được dùng cho màn hình vào game và làm biểu tượng ứng dụng trên điện thoại.
+FIG|splash.png|Màn hình vào game với ảnh key art của nhóm
+FIG|main-menu.png|Trang chủ với logo và bảy lựa chọn
+H1|CHƯƠNG 4. KIẾN TRÚC PHẦN MỀM
+H2|4.1. Tổng quan
+P|Mã nguồn được chia thành các nhóm theo trách nhiệm: điều khiển nhân vật, quái vật và trí tuệ nhân tạo, quản lý màn chơi, giao diện, âm thanh, lưu trữ, và một nhóm công cụ chỉ chạy trong Editor. Bảng dưới là thống kê quy mô mã nguồn tại thời điểm nộp báo cáo.
+TBLCAP|Thống kê quy mô mã nguồn
+TBLW|0.44,0.28,0.28
+TBLH|Thành phần;Số tệp;Số dòng
+TBLR|Mã nguồn trò chơi;119;13.778
+TBLR|Công cụ và kiểm thử;31;8.467
+TBLR|Tổng cộng;150;22.245
+P|Ngoài mã nguồn, dự án có 13 scene, 38 prefab, 29 tệp hiệu ứng âm thanh và 4 bản nhạc nền.
+H2|4.2. Vòng đời đối tượng và mẫu Singleton
+P|Nhân vật, giao diện trong khi chơi và các trình quản lý đều tồn tại xuyên suốt nhiều màn chơi. Chúng được cài đặt theo mẫu Singleton kết hợp cơ chế không huỷ khi nạp scene mới: mỗi scene đều chứa sẵn một bản, nhưng bản nào nạp sau sẽ tự huỷ nếu đã có bản trước. Nhờ vậy người chơi đi từ màn này sang màn khác mà máu, vàng và vũ khí không bị tạo lại từ đầu.
+P|Cách làm này có một mặt trái đã được phát hiện trong quá trình kiểm thử: khi một lượt chơi kết thúc, đối tượng nhân vật cũ vẫn còn sống và mang theo trạng thái đã chết sang lượt chơi mới. Bài học rút ra là mọi trạng thái tạm thời đều phải có đường phục hồi rõ ràng; mục 6.3 trình bày cụ thể lỗi này.
+H2|4.3. Luồng màn hình
+P|Mọi thao tác chuyển màn đều đi qua một lớp duy nhất, không nơi nào khác được phép gọi trực tiếp hàm nạp scene của Unity. Lớp này chịu trách nhiệm lưu trạng thái trước khi rời màn, dọn dẹp các đối tượng sống xuyên màn khi thoát khỏi phần chơi, và ghi nhớ màn hình cần quay về khi người chơi mở một màn hình phụ. Trò chơi gồm 13 scene:
+B|SplashScene: màn hình vào game.
+B|MainMenu: trang chủ.
+B|StoryScene: kể phần mở đầu và đoạn kết.
+B|LoadingScene: màn hình chờ khi nạp màn chơi.
+B|Scene1 đến Scene5: năm màn chơi.
+B|VictoryScene: màn hình chiến thắng.
+B|ProgressScene, AchievementsScene và SettingsScene: ba màn hình phụ.
+H2|4.4. Lưu trữ dữ liệu
+P|Dữ liệu được lưu ở hai nơi tách biệt, vì chúng có vòng đời khác nhau.
+P|Thứ nhất là tệp lưu của lượt chơi, ghi dưới dạng JSON: màn đang chơi, vị trí nhân vật, máu, thể lực, vàng, vũ khí đang cầm, danh sách quái đã chết, rương đã mở, rune đã nhặt, và máu còn lại của những con quái chưa chết. Tệp này bị xoá khi người chơi chết hoặc phá đảo.
+P|Thứ hai là lịch sử ngoài lượt chơi, lưu bằng PlayerPrefs: số lần hoàn thành từng màn, thời gian tốt nhất của từng màn, số lần phá đảo, số lần thất bại và kết cục của lượt chơi gần nhất. Phần này không bao giờ bị xoá, vì nếu xoá thì màn hình Tiến trình sẽ trống trơn đúng vào lúc người chơi muốn xem nó nhất.
+H2|4.5. Công cụ hỗ trợ trong Editor
+P|Nhóm viết thêm một bộ công cụ chỉ chạy trong Unity Editor để tự động hoá những việc dễ sai nếu làm bằng tay: sinh toàn bộ âm thanh, sinh biểu tượng ứng dụng, xử lý ảnh thương hiệu, dựng các scene giao diện, gắn trí tuệ nhân tạo vào prefab quái vật, đặt vật thể vào màn chơi, và kiểm tra tính đúng đắn của toàn dự án. Nguyên tắc chung của các công cụ này là chỉ thêm phần còn thiếu, không ghi đè lên những gì đã được đặt bằng tay.
+H1|CHƯƠNG 5. CÀI ĐẶT CÁC CHỨC NĂNG NỔI BẬT
+H2|5.1. Giao diện trong khi chơi
+P|HUD hiển thị đồng thời nhiều thông tin về nhân vật: thanh máu, thanh thể lực, số vàng, mục tiêu hiện tại của màn, các hiệu ứng đang chịu kèm hệ số tốc độ, và trạng thái hai kỹ năng phòng thủ. Dòng mục tiêu thay đổi theo từng loại nhiệm vụ: đếm số quái còn lại, đếm ngược thời gian sống sót, hoặc nhắc người chơi đi tìm chìa khoá.
+H2|5.2. Trạng thái thua cuộc
+P|Khi máu về 0, trò chơi khoá điều khiển, chạy hoạt ảnh chết, rồi hiện màn hình game over ngay trên màn chơi. Màn hình này gồm một dòng chữ lớn, một quầng đỏ nhấp nháy phía sau, một đoạn nhạc kết thúc, phần tóm tắt lượt chơi vừa mất và bốn nút điều hướng: Chơi lại, Trang chủ, Tiến trình và Cài đặt. Mỗi nút dẫn tới một scene riêng biệt.
+FIG|game-over.png|Màn hình game over với bốn nút điều hướng
+H2|5.3. Trạng thái thắng cuộc
+P|Mục tiêu để thắng được nêu rõ ràng: đi hết năm màn và hạ Soul Warden. Ngay khi boss gục, trò chơi phát nhạc chiến thắng và hiện hiệu ứng ngay trên màn chơi gồm chớp sáng vàng, dòng chữ phóng to và quầng sáng đập theo nhịp, rồi mới kể đoạn kết và chuyển sang màn hình chiến thắng.
+FIG|win-overlay.png|Hiệu ứng chiến thắng hiển thị ngay trên màn hình chơi game
+P|Màn hình chiến thắng hiển thị tổng vàng, thời gian hoàn thành, thời gian tốt nhất và vàng cao nhất, kèm bốn nút: Chơi lại, Trang chủ, Thành tích và Tiến trình.
+FIG|victory.png|Màn hình chiến thắng với thống kê và bốn nút điều hướng
+H2|5.4. Ba màn hình phụ
+P|Màn hình Tiến trình liệt kê năm màn chơi kèm trạng thái và thời gian tốt nhất của từng màn, cùng số lần phá đảo, số lần thất bại và kết cục của lượt chơi gần nhất.
+FIG|progress.png|Màn hình Tiến trình với trạng thái từng cấp độ và phần tổng kết
+P|Màn hình Thành tích hiển thị các kỷ lục và năm cột mốc tự mở khoá theo lịch sử chơi. Màn hình Cài đặt gồm ba thanh âm lượng, công tắc rung và hai công tắc bật tắt hiệu ứng âm thanh cùng nhạc nền.
+FIG|achievements.png|Màn hình Thành tích với các kỷ lục và cột mốc
+FIG|settings.png|Màn hình Cài đặt với âm lượng, rung và hai công tắc âm thanh
+H2|5.5. Trí tuệ nhân tạo cho NPC
+P|Đây là phần được đầu tư nhiều nhất về mặt kỹ thuật. Ban đầu mọi quái vật dùng chung một đoạn mã duy nhất: đi lang thang ngẫu nhiên, thấy người chơi trong tầm thì lao vào. Nhóm thay thế bằng một lớp nền chung và ba bộ não riêng cho ba loại quái.
+P|Lớp nền chịu trách nhiệm những gì loại quái nào cũng cần:
+B|Máy trạng thái bốn trạng thái: tuần tra, điều tra, giao chiến và rút lui.
+B|Tầm nhìn bị vật cản chặn, tức là quái không nhìn xuyên tường, khác với cách chỉ đo khoảng cách.
+B|Trí nhớ bốn giây: mất dấu người chơi thì vẫn đi tới vị trí nhìn thấy lần cuối để kiểm tra.
+B|Mạng báo động: con nào phát hiện người chơi sẽ báo cho đồng bọn trong bán kính 10 đơn vị.
+B|Dấu chấm than trên đầu khi vừa phát hiện, để người chơi đọc được trạng thái của quái.
+B|Né vật cản: hướng đi bị chặn thì tự thử lệch sang hai bên thay vì húc thẳng vào tường.
+B|Rút lui khi máu còn dưới một phần ba, và phản ứng khi bị bắn từ ngoài tầm nhìn.
+TBLCAP|So sánh hành vi của ba loại NPC và boss
+TBLW|0.18,0.24,0.58
+TBLH|NPC;Chiến thuật;Hành vi đặc trưng
+TBLR|Blue Slime;Đi săn theo bầy;Hú gọi cả bầy khi phát hiện; mỗi con vây từ một góc riêng cách nhau 115 độ; máu yếu thì lùi ra hồi máu rồi quay lại
+TBLR|Grape;Giữ khoảng cách;Giữ cự ly khoảng 4,2 đơn vị, vừa lùi vừa ném khi bị áp sát, đi ngang qua lại để khó bị nhắm, không ném khi bị tường chắn
+TBLR|Ghost;Mai phục;Lượn lờ ở trạng thái mờ cho tới khi người chơi vào gần 5 đơn vị thì hiện hình; mất dấu thì dịch chuyển ra sau lưng người chơi
+TBLR|Soul Warden;Boss ba giai đoạn;Đổi kiểu tấn công theo lượng máu còn lại: bắn hình nón, bắn toả tròn và triệu hồi quái phụ
+H2|5.6. Tối ưu hiệu năng
+P|Bản cài đặt trí tuệ nhân tạo đầu tiên gọi các hàm truy vấn vật lý trả về mảng mới ở mỗi khung hình, cả khi kiểm tra tầm nhìn lẫn khi dò vật cản theo nhiều hướng. Trên máy tính không thấy vấn đề, nhưng trên điện thoại đây chính là nguyên nhân gây khựng hình, vì bộ thu gom rác phải chạy liên tục.
+P|Nhóm sửa theo ba hướng: dùng các hàm truy vấn ghi vào bộ đệm dùng chung thay vì trả về mảng mới; gom việc quan sát vào một nhịp 0,1 giây và cho cả ba bộ não dùng chung kết quả; chỉ tính lại hướng né vật cản mỗi 0,12 giây hoặc khi hướng đi thay đổi quá 20 độ.
+TBLCAP|Chi phí của hệ thống AI trước và sau khi tối ưu, đo tại màn 3 với 7 NPC trong 3 giây
+TBLW|0.40,0.20,0.20,0.20
+TBLH|Chỉ số;Trước;Sau;Cải thiện
+TBLR|Truy vấn vật lý mỗi giây;820;122;giảm 6,7 lần
+TBLR|Truy vấn mỗi NPC mỗi giây;117;17,5;giảm 6,7 lần
+TBLR|Quy đổi mỗi khung hình ở 60 FPS;1,95;0,29;giảm 6,7 lần
+TBLR|Số mảng bộ nhớ cấp phát;khoảng 820 mỗi giây;0;loại bỏ hoàn toàn
+H1|CHƯƠNG 6. KIỂM THỬ VÀ ĐÁNH GIÁ
+H2|6.1. Chiến lược kiểm thử
+P|Trò chơi được kiểm thử ở ba tầng, tất cả đều chạy tự động từ dòng lệnh và không cần thao tác tay.
+P|Tầng thứ nhất là kiểm thử đơn vị cho phần logic thuần tuý không cần scene: quy tắc hồi chiêu, phép nhân hệ số tốc độ, quy tắc lưu lịch sử, điều hướng giữa các màn hình và mục tiêu của từng cấp độ.
+P|Tầng thứ hai là các bài kiểm thử chạy thật trong chế độ Play: bài kiểm thử mở một màn chơi, điều khiển đúng các thành phần thật của trò chơi rồi kiểm tra kết quả. Đây là tầng quan trọng nhất, vì phần lớn lỗi của một trò chơi nằm ở tương tác giữa các thành phần chứ không nằm trong một hàm riêng lẻ.
+P|Tầng thứ ba là bộ kiểm tra toàn dự án: xác nhận đủ số scene trong bản build, mỗi màn chơi có đủ quái và vật thể cần thiết, mỗi loại quái đã được gắn trí tuệ nhân tạo, và các tài nguyên hình ảnh đã được nhập đúng.
+H2|6.2. Kết quả kiểm thử
+TBLCAP|Kết quả các bài kiểm thử tự động
+TBLW|0.34,0.46,0.20
+TBLH|Bài kiểm thử;Nội dung;Kết quả
+TBLR|Kiểm thử đơn vị;42 bài về hồi chiêu, tốc độ, lịch sử, điều hướng, cốt truyện và mục tiêu;42/42 đạt
+TBLR|Kiểm tra toàn dự án;13 scene, vật thể từng màn, AI trên prefab, ảnh thương hiệu;Đạt hết
+TBLR|Cơ chế chiến đấu;Khiên, choáng, ba đối tượng va chạm, vùng cấm, công tắc âm thanh;Đạt hết
+TBLR|Trạng thái thắng và thua;Game over, bốn nút điều hướng, lưu lịch sử, hiệu ứng thắng;Đạt hết
+TBLR|Nhiệm vụ sống sót;Đồng hồ đếm ngược và mở cổng khi hết giờ;Đạt hết
+TBLR|Nhiệm vụ tìm chìa khoá;Giết hết quái không mở được cổng, nhặt chìa khoá thì mở;Đạt hết
+TBLR|AI của ba loại NPC;Bầy đàn, giữ khoảng cách, mai phục và dịch chuyển;Đạt hết
+TBLR|Hiệu năng AI;Ngân sách truy vấn vật lý cho mỗi NPC;Đạt
+TBLR|Chơi lại sau khi chết;Nhân vật sống lại đầy đủ khi bắt đầu lượt mới;Đạt hết
+TBLR|Các bài hồi quy;Chuyển màn, trang chủ, HUD và ba màn hình phụ;Đạt hết
+H2|6.3. Một số lỗi tiêu biểu đã phát hiện và sửa
+P|Bảng dưới liệt kê những lỗi đáng chú ý mà quá trình kiểm thử phát hiện. Điểm chung của chúng là đều khó nhận ra nếu chỉ chơi thử qua loa.
+TBLCAP|Các lỗi tiêu biểu và cách xử lý
+TBLW|0.28,0.40,0.32
+TBLH|Hiện tượng;Nguyên nhân;Cách sửa
+TBLR|Không NPC nào nhìn thấy người chơi;Mỗi màn có một collider cỡ cả bản đồ dùng để giới hạn camera; tia kiểm tra tầm nhìn xuất phát từ bên trong nó nên luôn báo có vật cản;Bỏ qua collider của bộ camera và tắt tuỳ chọn tính cả collider chứa điểm xuất phát
+TBLR|Quái Grape bắn trúng người chơi ở mọi khoảng cách;Quái chỉ có 3 máu nên trúng một đòn là vào trạng thái rút lui, mà trạng thái này không giới hạn tầm ném;Áp dụng tầm đánh 5 đơn vị cho mọi trạng thái
+TBLR|Quái Ghost đứng im như tượng;Thiết kế mai phục làm nó bất động cho tới khi người chơi tới sát;Cho nó lượn lờ ở trạng thái mờ và phản ứng khi bị bắn từ xa
+TBLR|Chơi lại sau khi chết thì nhân vật không làm gì được;Đối tượng nhân vật sống xuyên màn, khi chết bị khoá điều khiển và huỷ vũ khí mà không có đường phục hồi;Dọn sạch đối tượng cũ khi bắt đầu lượt mới và thêm cơ chế hồi sinh đầy đủ
+TBLR|Các dòng máu, thể lực và vàng đè lên nhau;Giao diện lấy kích thước canvas khi bố cục chưa được tính xong;Áp dụng lại bố cục HUD sau khi canvas đã ổn định
+H2|6.4. Kiểm thử trên thiết bị
+P|Ngoài các bài kiểm thử tự động, nhóm cài tệp APK lên điện thoại Android thật để kiểm tra những thứ chỉ thiết bị mới cho biết: độ nhạy của cần điều khiển ảo, kích thước chữ trên màn hình nhỏ, vùng an toàn quanh khuyết camera, và độ mượt khi nhiều quái cùng xuất hiện.
+H1|CHƯƠNG 7. KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
+H2|7.1. Kết quả đạt được
+P|Nhóm đã hoàn thành một trò chơi 2D chạy được trên Android với đầy đủ vòng đời của một sản phẩm: màn hình vào game, trang chủ, phần mở đầu kể chuyện, năm màn chơi với ba loại nhiệm vụ khác nhau, trận đấu boss ba giai đoạn, trạng thái thắng và thua đều có đầy đủ nút điều hướng, ba màn hình phụ, hệ thống lưu tiến trình hai tầng và trí tuệ nhân tạo riêng cho từng loại quái vật.
+P|Về mặt kỹ thuật, điểm nhóm tâm đắc nhất là hệ thống kiểm thử tự động. Chính nhờ nó mà những lỗi như quái không nhìn thấy người chơi hay nhân vật vẫn ở trạng thái chết sau khi chơi lại được phát hiện và xử lý tận gốc, thay vì chỉ vá tạm ở chỗ nhìn thấy được.
+H2|7.2. Hạn chế
+B|Số loại quái vật còn ít, mới có ba loại thường và một boss.
+B|Một phần tài nguyên hình ảnh sử dụng bộ asset có sẵn, cần thay thế nếu phát hành thương mại.
+B|Chưa có hệ thống nhiệm vụ phụ hay cốt truyện phân nhánh.
+B|Chưa đo hiệu năng trên nhiều dòng máy Android khác nhau.
+H2|7.3. Hướng phát triển
+B|Bổ sung thêm vùng đất, loại quái và boss mới.
+B|Thêm hệ thống trang bị và nâng cấp chỉ số nhân vật.
+B|Mở rộng trí tuệ nhân tạo: quái biết phối hợp theo đội hình và biết dùng địa hình để ẩn nấp.
+B|Thêm chế độ chơi vô tận để tăng thời lượng chơi lại.
+B|Đưa toàn bộ tài nguyên về tự sản xuất để có thể phát hành trên cửa hàng ứng dụng.
