@@ -85,6 +85,14 @@ public class ActiveWeapon : Singleton<ActiveWeapon>
         }
     }
 
+    // The mirror of DisableForDeath, for a player object that is brought back
+    // for a new run. The weapon itself is handed back by the inventory.
+    public void EnableAfterRevive()
+    {
+        disabled = false;
+        attackButtonDown = false;
+    }
+
     private void AttackCooldown()
     {
         isAttacking = true;

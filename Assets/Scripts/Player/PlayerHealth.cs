@@ -83,10 +83,43 @@ public class PlayerHealth : Singleton<PlayerHealth>
     // Used by the save system when a run is restored or the shop heals the run.
     public void ApplyLoadedHealth(int current, int max)
     {
+        bool wasDead = isDead;
+
         maxHealth = Mathf.Max(1, max);
         currentHealth = Mathf.Clamp(current, 0, maxHealth);
         isDead = currentHealth <= 0;
+
+        // A run normally starts with a brand new player object, so this rarely
+        // fires. It matters when the old one outlives its run - then clearing
+        // the dead flag is not enough on its own: the controls are still off,
+        // the weapon is gone and the death animation is still on screen, and
+        // the player lands in the new run as a corpse that cannot move.
+        if (wasDead && !isDead) { RestoreFromDeath(); }
+
         UpdateHealthSlider();
+    }
+
+    private void RestoreFromDeath()
+    {
+        canTakeDamage = true;
+
+        PlayerController controller = PlayerController.Instance;
+        if (controller != null) { controller.SetControlsEnabled(true); }
+
+        // The weapon itself is re-equipped by the inventory straight after
+        // this, as part of applying the saved run.
+        if (ActiveWeapon.Instance != null) { ActiveWeapon.Instance.EnableAfterRevive(); }
+
+        Animator animator = GetComponent<Animator>();
+        if (animator != null)
+        {
+            // The death trigger left the animator in its last state; rebinding
+            // drops it back to the default one.
+            animator.Rebind();
+            animator.Update(0f);
+        }
+
+        Debug.Log("[PlayerHealth] Revived a player object that outlived its run.");
     }
 
     public void TakeDamage(int damageAmount, Transform hitTransform)

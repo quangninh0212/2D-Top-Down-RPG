@@ -41,6 +41,11 @@ public static class SceneFlow
 
     public static void StartNewRun()
     {
+        // Explicitly, rather than relying on the story screen to do it on the
+        // way past: a new run must never inherit the last one's player, least
+        // of all the dead one left behind by the game over screen.
+        LeaveGameplay();
+
         GameSaveManager save = GameSaveManager.Instance;
         if (save != null)
         {
